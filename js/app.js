@@ -842,11 +842,46 @@ function renderProgress() {
         ].map(g => `<div class="goal-item">${g}</div>`).join('')}
       </div>
 
+      <div class="section-title">☁️ Синхронизация</div>
+      <div class="gist-sync-card">
+        ${getGistConfig()?.token
+          ? `<div class="gist-connected">✅ Подключён к GitHub Gist</div>`
+          : `<div class="gist-hint">Сохраняй прогресс в облако — работает на любом устройстве и браузере</div>`
+        }
+        <div class="gist-btns">
+          <button id="gist-save-btn" class="btn-gist-save" onclick="saveToGist()">☁️ Сохранить</button>
+          <button id="gist-load-btn" class="btn-gist-load" onclick="loadFromGist()">📥 Загрузить</button>
+        </div>
+        <div id="gist-status" class="gist-status"></div>
+        ${!getGistConfig()?.token
+          ? `<button class="btn-gist-setup" onclick="showGistSetup()">🔑 Подключить GitHub →</button>`
+          : `<button class="btn-gist-reset" onclick="resetGistConfig()">Изменить токен</button>`
+        }
+      </div>
+
       <div class="reset-section">
         <button class="btn-reset" onclick="resetState()">Сбросить прогресс</button>
       </div>
     </div>
     ${renderNav('progress')}
+
+    <div id="gist-modal" class="gist-modal" style="display:none" onclick="if(event.target===this)hideGistModal()">
+      <div class="gist-modal-inner">
+        <div class="gist-modal-title">🔑 Подключение GitHub</div>
+        <div class="gist-steps">
+          <div class="gist-step"><span class="step-num">1</span>Нажми кнопку ниже — откроется GitHub</div>
+          <div class="gist-step"><span class="step-num">2</span>Нажми зелёную кнопку <b>"Generate token"</b></div>
+          <div class="gist-step"><span class="step-num">3</span>Скопируй токен и вставь сюда</div>
+        </div>
+        <a href="https://github.com/settings/tokens/new?scopes=gist&description=SpeechTrainer"
+           target="_blank" class="btn-open-github">Открыть GitHub →</a>
+        <input id="gist-token-input" class="gist-token-input"
+               type="password" placeholder="ghp_xxxxxxxxxxxxxxxx"
+               autocomplete="off" autocorrect="off" spellcheck="false" />
+        <button class="btn-save-token" onclick="saveGistToken()">Сохранить и подключить</button>
+        <button class="btn-cancel-modal" onclick="hideGistModal()">Отмена</button>
+      </div>
+    </div>
   `;
 }
 
@@ -902,6 +937,122 @@ function renderNav(active) {
       `).join('')}
     </nav>
   `;
+}
+
+// ═══════════════════════════════════════════════
+// GITHUB GIST SYNC
+// ═══════════════════════════════════════════════
+const GIST_CONFIG_KEY = 'speech_gist_v1';
+const GIST_FILENAME = 'speech_trainer_progress.json';
+
+function getGistConfig() {
+  try { return JSON.parse(localStorage.getItem(GIST_CONFIG_KEY) || 'null'); } catch { return null; }
+}
+
+function saveGistConfig(cfg) {
+  localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(cfg));
+}
+
+function resetGistConfig() {
+  if (!confirm('Отключить текущий токен?')) return;
+  localStorage.removeItem(GIST_CONFIG_KEY);
+  navigate('progress');
+}
+
+async function saveToGist() {
+  const cfg = getGistConfig();
+  if (!cfg?.token) { showGistSetup(); return; }
+
+  setGistBtn('save', 'Сохраняем...', true);
+  try {
+    const body = {
+      description: 'Speech Trainer Progress',
+      public: false,
+      files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } },
+    };
+    const url = cfg.gistId
+      ? `https://api.github.com/gists/${cfg.gistId}`
+      : 'https://api.github.com/gists';
+    const res = await fetch(url, {
+      method: cfg.gistId ? 'PATCH' : 'POST',
+      headers: gistHeaders(cfg.token),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`GitHub вернул ${res.status}`);
+    const data = await res.json();
+    saveGistConfig({ ...cfg, gistId: data.id });
+    gistStatus('✅ Сохранено в облако!', 'ok');
+  } catch (e) {
+    gistStatus('❌ ' + e.message, 'err');
+  } finally {
+    setGistBtn('save', '☁️ Сохранить', false);
+  }
+}
+
+async function loadFromGist() {
+  const cfg = getGistConfig();
+  if (!cfg?.token) { showGistSetup(); return; }
+  if (!cfg?.gistId) { gistStatus('Сначала сохрани прогресс', 'err'); return; }
+
+  setGistBtn('load', 'Загружаем...', true);
+  try {
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: gistHeaders(cfg.token),
+    });
+    if (!res.ok) throw new Error(`GitHub вернул ${res.status}`);
+    const data = await res.json();
+    const content = data.files[GIST_FILENAME]?.content;
+    if (!content) throw new Error('Файл не найден в Gist');
+    Object.assign(state, JSON.parse(content));
+    saveState();
+    gistStatus('✅ Прогресс загружен!', 'ok');
+    setTimeout(() => navigate('home'), 1200);
+  } catch (e) {
+    gistStatus('❌ ' + e.message, 'err');
+  } finally {
+    setGistBtn('load', '📥 Загрузить', false);
+  }
+}
+
+function gistHeaders(token) {
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+  };
+}
+
+function setGistBtn(which, text, disabled) {
+  const btn = document.getElementById(`gist-${which}-btn`);
+  if (btn) { btn.textContent = text; btn.disabled = disabled; }
+}
+
+function gistStatus(msg, type) {
+  const el = document.getElementById('gist-status');
+  if (el) { el.textContent = msg; el.className = `gist-status ${type}`; }
+}
+
+function showGistSetup() {
+  const m = document.getElementById('gist-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function hideGistModal() {
+  const m = document.getElementById('gist-modal');
+  if (m) m.style.display = 'none';
+}
+
+function saveGistToken() {
+  const input = document.getElementById('gist-token-input');
+  const token = input?.value?.trim();
+  if (!token || !token.startsWith('ghp_')) {
+    alert('Токен должен начинаться с ghp_');
+    return;
+  }
+  const cfg = getGistConfig() || {};
+  saveGistConfig({ ...cfg, token });
+  hideGistModal();
+  saveToGist();
 }
 
 // ═══════════════════════════════════════════════

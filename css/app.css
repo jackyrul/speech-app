@@ -761,6 +761,78 @@ p + p { margin-top: 8px; }
 .nav-icon { font-size: 22px; }
 .nav-label { font-size: 10px; font-weight: 500; }
 
+/* ─── GIST SYNC ─── */
+.gist-sync-card {
+  margin: 0 16px 16px;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.gist-connected { font-size: 13px; color: var(--success); font-weight: 600; margin-bottom: 12px; }
+.gist-hint { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4; }
+.gist-btns { display: flex; gap: 10px; margin-bottom: 10px; }
+.btn-gist-save {
+  flex: 1; background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  color: white; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600;
+}
+.btn-gist-save:disabled { opacity: 0.6; }
+.btn-gist-load {
+  flex: 1; background: var(--border); color: var(--text);
+  border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600;
+}
+.btn-gist-load:disabled { opacity: 0.6; }
+.gist-status { font-size: 13px; font-weight: 600; min-height: 20px; margin-bottom: 6px; }
+.gist-status.ok { color: var(--success); }
+.gist-status.err { color: #EF4444; }
+.btn-gist-setup {
+  width: 100%; background: #EEF2FF; color: var(--primary);
+  border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600; margin-top: 4px;
+}
+.btn-gist-reset { font-size: 12px; color: var(--text-muted); text-decoration: underline; margin-top: 4px; }
+
+/* ─── GIST MODAL ─── */
+.gist-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 200; padding: 16px;
+}
+.gist-modal-inner {
+  background: var(--card); border-radius: 20px 20px 16px 16px;
+  padding: 24px 20px 32px; width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.gist-modal-title { font-size: 18px; font-weight: 800; }
+.gist-steps { display: flex; flex-direction: column; gap: 8px; }
+.gist-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 14px; line-height: 1.4; color: var(--text-muted);
+}
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--primary);
+  color: white; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.btn-open-github {
+  display: block; text-align: center; background: #24292F; color: white;
+  border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 600;
+  text-decoration: none;
+}
+.gist-token-input {
+  width: 100%; border: 2px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; font-size: 14px; font-family: monospace;
+  outline: none; transition: border 0.15s;
+}
+.gist-token-input:focus { border-color: var(--primary); }
+.btn-save-token {
+  width: 100%; background: linear-gradient(135deg, #4F46E5, #7C3AED);
+  color: white; border-radius: 10px; padding: 14px; font-size: 15px; font-weight: 700;
+}
+.btn-cancel-modal {
+  text-align: center; color: var(--text-muted); font-size: 14px;
+  padding: 8px; width: 100%;
+}
+
 /* ─── SAFE AREA (iOS) ─── */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .bottom-nav { padding-bottom: env(safe-area-inset-bottom); height: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
