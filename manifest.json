@@ -1,0 +1,16 @@
+{
+  "name": "Речевой Тренажёр",
+  "short_name": "Речь",
+  "description": "Ежедневный тренажёр речи: 8 недель по 20 минут в день",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F3F4F6",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗣️</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
