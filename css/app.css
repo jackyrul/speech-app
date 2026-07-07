@@ -833,8 +833,32 @@ p + p { margin-top: 8px; }
   padding: 8px; width: 100%;
 }
 
-/* ─── SAFE AREA (iOS) ─── */
+/* ─── SAFE AREA (iOS PWA) ─── */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .bottom-nav { padding-bottom: env(safe-area-inset-bottom); height: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
-  .view { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px); }
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  }
+  .view {
+    padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  }
 }
+
+/* Статус-бар сверху (только в standalone PWA режиме) */
+@media all and (display-mode: standalone) {
+  .hero,
+  .page-header {
+    padding-top: calc(48px + env(safe-area-inset-top, 0px));
+  }
+  .training-header,
+  .phase-header {
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  }
+  .done-view {
+    padding-top: calc(40px + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* iOS: убираем выделение при тапе */
+* { -webkit-tap-highlight-color: transparent; }
+input, button, a { -webkit-touch-callout: none; }

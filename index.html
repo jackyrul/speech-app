@@ -2,12 +2,47 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="Ежедневный тренажёр речи: дикция, голос, темп, структура. 8-недельная программа по 20 минут в день.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Ежедневный тренажёр речи: дикция, голос, темп, структура. 8-недельная программа.">
+
+  <!-- PWA / iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Речевой">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#4F46E5">
+
   <title>Речевой Тренажёр</title>
   <link rel="stylesheet" href="css/app.css">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+
+  <!-- iOS touch icon — генерируем через canvas чтобы emoji отображался правильно -->
+  <link rel="apple-touch-icon" id="apple-touch-icon" href="icons/icon.svg">
+
+  <script>
+    // Генерируем PNG иконку для iOS через canvas (emoji корректно рендерится)
+    (function () {
+      try {
+        var c = document.createElement('canvas');
+        c.width = c.height = 512;
+        var ctx = c.getContext('2d');
+        var g = ctx.createLinearGradient(0, 0, 512, 512);
+        g.addColorStop(0, '#4F46E5');
+        g.addColorStop(1, '#7C3AED');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 512, 512, 115);
+        ctx.fill();
+        ctx.font = '300px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🗣️', 256, 270);
+        var link = document.getElementById('apple-touch-icon');
+        if (link) link.href = c.toDataURL('image/png');
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div id="app">
@@ -16,7 +51,18 @@
       <div class="splash-text">Загрузка...</div>
     </div>
   </div>
+
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
+
+  <script>
+    // Регистрируем Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+          .catch(function (e) { console.warn('SW:', e); });
+      });
+    }
+  </script>
 </body>
 </html>
