@@ -229,6 +229,11 @@ function render() {
 // ═══════════════════════════════════════════════
 // HOME VIEW
 // ═══════════════════════════════════════════════
+function isStandalone() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+
 function renderHome() {
   const week = PROGRAM.weeks[state.currentWeek - 1];
   const done = isSessionDone(state.currentWeek, state.currentDay);
@@ -236,6 +241,18 @@ function renderHome() {
 
   appEl.innerHTML = `
     <div class="view home-view">
+      ${!isStandalone() ? `
+        <div class="pwa-banner" id="pwa-banner">
+          <div class="pwa-banner-content">
+            <span class="pwa-icon">📲</span>
+            <div class="pwa-text">
+              <div class="pwa-title">Установи как приложение</div>
+              <div class="pwa-sub">Safari → <b>Поделиться</b> → <b>«На экран "Домой"»</b></div>
+            </div>
+          </div>
+          <button class="pwa-close" onclick="document.getElementById('pwa-banner').style.display='none'">✕</button>
+        </div>
+      ` : ''}
       <header class="hero">
         <div class="hero-inner">
           <div class="hero-title">🗣️ Речевой Тренажёр</div>
