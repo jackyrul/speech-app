@@ -1,7 +1,7 @@
 'use strict';
 
 // При каждом деплое меняем версию — старый кэш удаляется в activate.
-const CACHE = 'speech-v3';
+const CACHE = 'speech-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -43,5 +43,32 @@ self.addEventListener('fetch', e => {
         return res;
       })
       .catch(() => caches.match(e.request).then(cached => cached || caches.match('./index.html')))
+  );
+});
+
+// ─── Push-уведомления ───
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (_) { data = {}; }
+  const title = data.title || 'Речевой Тренажёр';
+  const body = data.body || 'Пора на тренировку — 20 минут 🗣️';
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: './icons/icon.svg',
+      badge: './icons/icon.svg',
+      tag: 'daily-reminder',
+      data: { url: './' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) { if ('focus' in c) return c.focus(); }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
+    })
   );
 });

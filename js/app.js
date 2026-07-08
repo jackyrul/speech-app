@@ -15,6 +15,7 @@ let state = {
   lastActiveDate: null,
   startDate: null,
   lang: 'ru',
+  pushEnabled: false,
 };
 
 // ═══════════════════════════════════════════════
@@ -1162,6 +1163,8 @@ function renderProgress() {
       <div class="section-title">${t('langTitle')}</div>
       ${renderLangSwitch()}
 
+      ${renderPushSection()}
+
       <div class="section-title">${t('goalsTitle')}</div>
       <div class="goals-list">
         ${(t('goals') || []).map(g => `<div class="goal-item">${g}</div>`).join('')}
@@ -1411,6 +1414,92 @@ function saveGistToken() {
   saveGistConfig({ ...cfg, token });
   hideGistModal();
   saveToGist();
+}
+
+// ═══════════════════════════════════════════════
+// PUSH NOTIFICATIONS
+// ═══════════════════════════════════════════════
+const VAPID_PUBLIC_KEY = 'BPTDrhf7FJLx2j8zSsJjxNxfXDUtvzeu8BzgH5kE2X_jNOHLxyErnnxGLON6GEtVI-OEnDhjR0w2cGzmLZppTlw';
+const PUSH_FILENAME = 'push_subscription.json';
+
+function pushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function enablePush() {
+  if (!pushSupported()) { pushStatus(t('notifyUnsupported'), 'err'); return; }
+
+  // На iOS push доступен только в установленном PWA
+  if (!isStandalone() && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    pushStatus(t('notifyNeedInstall'), 'err');
+    return;
+  }
+  const cfg = getGistConfig();
+  if (!cfg?.token) { pushStatus(t('notifyNeedGist'), 'err'); showGistSetup(); return; }
+
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { pushStatus(t('notifyDenied'), 'err'); return; }
+
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    await savePushSubscription(sub);
+    state.pushEnabled = true;
+    saveState();
+    pushStatus(t('notifyEnabled'), 'ok');
+    render();
+  } catch (e) {
+    pushStatus(t('gistErr') + e.message, 'err');
+  }
+}
+
+// Кладём подписку отдельным файлом в тот же Gist с прогрессом
+async function savePushSubscription(sub) {
+  let cfg = getGistConfig();
+  if (!cfg?.gistId) { await saveToGist(); cfg = getGistConfig(); }
+  if (!cfg?.gistId) throw new Error('no gist');
+  const body = { files: { [PUSH_FILENAME]: { content: JSON.stringify({ sub, lang: state.lang, at: new Date().toISOString() }, null, 2) } } };
+  const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+    method: 'PATCH', headers: gistHeaders(cfg.token), body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`GitHub ${res.status}`);
+}
+
+function pushStatus(msg, type) {
+  const el = document.getElementById('push-status');
+  if (el) { el.textContent = msg; el.className = `gist-status ${type}`; }
+}
+
+function renderPushSection() {
+  if (!pushSupported()) return '';
+  const enabled = state.pushEnabled && (typeof Notification !== 'undefined' && Notification.permission === 'granted');
+  return `
+    <div class="section-title">${t('notifyTitle')}</div>
+    <div class="gist-sync-card">
+      ${enabled
+        ? `<div class="gist-connected">${t('notifyEnabled')}</div>`
+        : `<div class="gist-hint">${t('notifyHint')}</div>`}
+      <div class="gist-btns">
+        <button class="btn-gist-save" onclick="enablePush()">${enabled ? t('notifyReenable') : t('notifyEnable')}</button>
+      </div>
+      <div id="push-status" class="gist-status"></div>
+    </div>
+  `;
 }
 
 // ═══════════════════════════════════════════════
