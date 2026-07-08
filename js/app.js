@@ -89,33 +89,64 @@ function resetState() {
 }
 
 // ═══════════════════════════════════════════════
-// TIMER
+// TIMER — wall-clock based (iOS background-safe)
 // ═══════════════════════════════════════════════
 let timerInterval = null;
-let timerRemaining = 0;
+let timerEndTime = 0;      // Date.now() + duration ms
 let timerTotal = 0;
 let timerPaused = false;
+let timerRemAtPause = 0;   // ms remaining when paused
+let _onTick = null;
+let _onDone = null;
 
 function startTimer(seconds, onTick, onDone) {
   stopTimer();
-  timerRemaining = seconds;
   timerTotal = seconds;
+  timerEndTime = Date.now() + seconds * 1000;
   timerPaused = false;
-  onTick(timerRemaining, timerTotal);
-  timerInterval = setInterval(() => {
+  _onTick = onTick;
+  _onDone = onDone;
+
+  function tick() {
     if (timerPaused) return;
-    timerRemaining--;
-    onTick(timerRemaining, timerTotal);
-    if (timerRemaining <= 0) { stopTimer(); playDone(); onDone(); }
-  }, 1000);
+    const remaining = Math.max(0, Math.ceil((timerEndTime - Date.now()) / 1000));
+    onTick(remaining, timerTotal);
+    if (remaining <= 0) { stopTimer(); playDone(); onDone(); }
+  }
+
+  tick();
+  // 500ms interval — точнее и восстанавливается быстрее после фона
+  timerInterval = setInterval(tick, 500);
+  document.addEventListener('visibilitychange', _onVisibility);
+}
+
+function _onVisibility() {
+  // Приложение вернулось из фона — пересчитываем сразу
+  if (!document.hidden && timerEndTime > 0 && !timerPaused && _onTick) {
+    const remaining = Math.max(0, Math.ceil((timerEndTime - Date.now()) / 1000));
+    _onTick(remaining, timerTotal);
+    if (remaining <= 0) { stopTimer(); playDone(); if (_onDone) _onDone(); }
+  }
 }
 
 function stopTimer() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  document.removeEventListener('visibilitychange', _onVisibility);
+  timerEndTime = 0;
+  _onTick = null;
+  _onDone = null;
 }
 
 function togglePause() {
-  timerPaused = !timerPaused;
+  if (timerPaused) {
+    // Возобновляем: сдвигаем endTime вперёд на время паузы
+    timerEndTime = Date.now() + timerRemAtPause;
+    timerPaused = false;
+  } else {
+    // Пауза: запоминаем сколько осталось
+    timerRemAtPause = Math.max(0, timerEndTime - Date.now());
+    timerPaused = true;
+  }
   const btn = document.getElementById('pause-btn');
   if (btn) btn.textContent = timerPaused ? '▶ Продолжить' : '⏸ Пауза';
 }
