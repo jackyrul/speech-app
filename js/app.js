@@ -14,7 +14,71 @@ let state = {
   streak: 0,
   lastActiveDate: null,
   startDate: null,
+  lang: 'ru',
 };
+
+// ═══════════════════════════════════════════════
+// I18N HELPERS
+// ═══════════════════════════════════════════════
+function curLang() {
+  return (typeof UI !== 'undefined' && UI[state.lang]) ? state.lang : 'ru';
+}
+function getUI() { return UI[curLang()] || UI.ru; }
+function t(key) {
+  const u = getUI();
+  return u[key] != null ? u[key] : UI.ru[key];
+}
+function tf(key, params) {
+  let s = t(key);
+  if (typeof s === 'string' && params) {
+    for (const k in params) s = s.split('{' + k + '}').join(params[k]);
+  }
+  return s;
+}
+
+// Локализованная неделя (RU — базовая из data.js)
+function getWeek(weekId) {
+  const base = PROGRAM.weeks[weekId - 1];
+  const lang = curLang();
+  if (lang === 'ru') return base;
+  const meta = (WEEK_META[lang] && WEEK_META[lang][weekId]) || {};
+  const pcontent = (PHASE_CONTENT[lang] && PHASE_CONTENT[lang][weekId]) || {};
+  const ptitles = PHASE_TITLES[lang] || {};
+  const phases = base.phases.map(p => {
+    const np = { ...p };
+    np.title = ptitles[p.id] || p.title;
+    np.content = pcontent[p.id] || p.content;
+    if (p.warmupList) np.warmupList = WARMUP_I18N[lang] || p.warmupList;
+    if (p.twisters) np.twisters = weekId === 5 ? TWISTERS_I18N[lang].extra : TWISTERS_I18N[lang].main;
+    if (p.cameraTopics) np.cameraTopics = CAMERA_I18N[lang] || p.cameraTopics;
+    return np;
+  });
+  return { ...base, title: meta.title || base.title, goal: meta.goal || base.goal, tip: meta.tip || base.tip, phases };
+}
+
+function getReadingTexts() {
+  const lang = curLang();
+  if (lang !== 'ru' && typeof READING_I18N !== 'undefined' && READING_I18N[lang]) return READING_I18N[lang];
+  return (typeof READING_TEXTS !== 'undefined') ? READING_TEXTS : [];
+}
+
+function setLang(lang) {
+  if (!LANGS.includes(lang)) return;
+  state.lang = lang;
+  saveState();
+  autoSaveToGist();
+  render();
+}
+
+function renderLangSwitch() {
+  return `
+    <div class="lang-switch">
+      ${LANGS.map(l => `
+        <button class="lang-btn ${curLang() === l ? 'active' : ''}" onclick="setLang('${l}')">${LANG_LABELS[l]}</button>
+      `).join('')}
+    </div>
+  `;
+}
 
 function loadState() {
   try {
@@ -84,9 +148,9 @@ function totalCompleted() {
 }
 
 function resetState() {
-  if (!confirm('Сбросить весь прогресс? Это нельзя отменить.')) return;
+  if (!confirm(t('confirmReset'))) return;
   localStorage.removeItem(STORAGE_KEY);
-  state = { currentWeek: 1, currentDay: 1, completedSessions: {}, assessments: {}, parasiteLog: [], streak: 0, lastActiveDate: null, startDate: todayStr() };
+  state = { currentWeek: 1, currentDay: 1, completedSessions: {}, assessments: {}, parasiteLog: [], streak: 0, lastActiveDate: null, startDate: todayStr(), lang: state.lang || 'ru' };
   navigate('home');
 }
 
@@ -150,7 +214,7 @@ function togglePause() {
     timerPaused = true;
   }
   const btn = document.getElementById('pause-btn');
-  if (btn) btn.textContent = timerPaused ? '▶ Продолжить' : '⏸ Пауза';
+  if (btn) btn.textContent = timerPaused ? t('tResume') : t('tPause');
 }
 
 function playDone() {
@@ -203,7 +267,7 @@ function startBreathing(pattern, container) {
   const counter = container.querySelector('.breath-counter');
   if (!circle) return;
 
-  const LABELS = { inhale: 'Вдох', hold: 'Задержка', exhale: 'Выдох' };
+  const LABELS = { inhale: t('bInhale'), hold: t('bHold'), exhale: t('bExhale') };
   const start = Date.now();
   let lastPhase = null;
 
@@ -214,7 +278,7 @@ function startBreathing(pattern, container) {
       circle.style.transform = 'scale(0.6)';
       circle.style.opacity = '0.6';
       circle.dataset.phase = 'done';
-      if (label) label.textContent = 'Готово';
+      if (label) label.textContent = t('bDone');
       if (count) count.textContent = '✓';
       if (counter) counter.textContent = `Цикл ${maxCycles} / ${maxCycles}`;
       stopBreathing();
@@ -306,14 +370,14 @@ function renderReminderBanner() {
   if (trainedToday || doneToday) return '';
 
   const streak = state.streak || 0;
-  const msg = streak >= 2
-    ? `🔥 Серия <b>${streak} ${plural(streak, 'день', 'дня', 'дней')}</b> под угрозой — не пропусти сегодня!`
-    : `📅 Сегодня ты ещё не тренировался. 20 минут — и готово.`;
+  const words = t('dayWords');
+  const word = plural(streak, words[0], words[1], words[2]);
+  const msg = streak >= 2 ? tf('remindStreak', { n: streak, word }) : t('remindPlain');
 
   return `
     <div class="reminder-banner">
       <span class="reminder-text">${msg}</span>
-      <button class="reminder-go" onclick="startTraining(${state.currentWeek}, ${state.currentDay})">Начать →</button>
+      <button class="reminder-go" onclick="startTraining(${state.currentWeek}, ${state.currentDay})">${t('start')}</button>
     </div>
   `;
 }
@@ -326,7 +390,7 @@ function plural(n, one, few, many) {
 }
 
 function renderHome() {
-  const week = PROGRAM.weeks[state.currentWeek - 1];
+  const week = getWeek(state.currentWeek);
   const done = isSessionDone(state.currentWeek, state.currentDay);
   const totalDays = totalCompleted();
 
@@ -337,8 +401,8 @@ function renderHome() {
           <div class="pwa-banner-content">
             <span class="pwa-icon">📲</span>
             <div class="pwa-text">
-              <div class="pwa-title">Установи как приложение</div>
-              <div class="pwa-sub">Safari → <b>Поделиться</b> → <b>«На экран "Домой"»</b></div>
+              <div class="pwa-title">${t('pwaTitle')}</div>
+              <div class="pwa-sub">${t('pwaSub')}</div>
             </div>
           </div>
           <button class="pwa-close" onclick="document.getElementById('pwa-banner').style.display='none'">✕</button>
@@ -357,9 +421,10 @@ function renderHome() {
               </g>
             </svg>
             <div class="hero-wordmark">
-              <div class="hero-title">Речевой</div>
-              <div class="hero-sub">Тренажёр речи · 20 минут в день</div>
+              <div class="hero-title">${t('brandTitle')}</div>
+              <div class="hero-sub">${t('brandSub')}</div>
             </div>
+            ${renderLangSwitch()}
           </div>
         </div>
       </header>
@@ -369,45 +434,45 @@ function renderHome() {
       <div class="home-stats">
         <div class="stat-card">
           <div class="stat-num">${state.streak}</div>
-          <div class="stat-label">🔥 дней подряд</div>
+          <div class="stat-label">${t('statStreak')}</div>
         </div>
         <div class="stat-card">
           <div class="stat-num">${totalDays}</div>
-          <div class="stat-label">✅ тренировок</div>
+          <div class="stat-label">${t('statWorkouts')}</div>
         </div>
         <div class="stat-card">
           <div class="stat-num">${state.currentWeek}</div>
-          <div class="stat-label">📅 неделя</div>
+          <div class="stat-label">${t('statWeek')}</div>
         </div>
       </div>
 
-      <div class="section-title">Сегодня</div>
+      <div class="section-title">${t('today')}</div>
       <div class="today-card ${done ? 'done' : ''}">
         <div class="today-header">
-          <span class="week-badge">${week.icon} Неделя ${week.id}</span>
-          <span class="day-badge">День ${state.currentDay}</span>
+          <span class="week-badge">${week.icon} ${t('week')} ${week.id}</span>
+          <span class="day-badge">${t('day')} ${state.currentDay}</span>
         </div>
         <div class="today-week-title">${week.title}</div>
         <div class="today-goal">${week.goal}</div>
         <div class="today-phases">
           ${week.phases.map(p => `<span class="phase-dot" style="background:${p.color}" title="${p.title}">${p.emoji}</span>`).join('')}
-          <span class="today-time">20 мин</span>
+          <span class="today-time">${t('min20')}</span>
         </div>
         ${done
-          ? `<div class="done-banner">✅ Тренировка выполнена!</div>`
+          ? `<div class="done-banner">${t('doneToday')}</div>`
           : `<button class="btn-start" onclick="startTraining(${week.id}, ${state.currentDay})">
-               Начать тренировку →
+               ${t('startWorkout')}
              </button>`
         }
       </div>
 
       <div class="tip-card">
-        <div class="tip-label">💡 Фокус недели</div>
+        <div class="tip-label">${t('weekFocus')}</div>
         <div class="tip-text">${week.tip}</div>
       </div>
 
       ${state.currentDay > 1 || state.currentWeek > 1 ? `
-        <div class="section-title">Дни недели ${week.id}</div>
+        <div class="section-title">${t('weekDays')} ${week.id}</div>
         <div class="days-row">
           ${Array.from({ length: 7 }, (_, i) => {
             const d = i + 1;
@@ -434,14 +499,14 @@ function startTraining(weekNum, dayNum) {
 
 function renderTraining() {
   const { weekNum, dayNum } = trainingState;
-  const week = PROGRAM.weeks[weekNum - 1];
+  const week = getWeek(weekNum);
   const done = isSessionDone(weekNum, dayNum);
 
   appEl.innerHTML = `
     <div class="view training-view">
       <div class="training-header">
-        <button class="back-btn" onclick="navigate('home')">← Назад</button>
-        <div class="training-title">${week.icon} Неделя ${weekNum} · День ${dayNum}</div>
+        <button class="back-btn" onclick="navigate('home')">${t('back')}</button>
+        <div class="training-title">${week.icon} ${t('week')} ${weekNum} · ${t('day')} ${dayNum}</div>
         <div></div>
       </div>
 
@@ -457,7 +522,7 @@ function renderTraining() {
               <span class="phase-emoji">${phase.emoji}</span>
               <div class="phase-info">
                 <div class="phase-name">${phase.title}</div>
-                <div class="phase-meta">${Math.round(phase.seconds / 60)} мин</div>
+                <div class="phase-meta">${tf('minShort', { n: Math.round(phase.seconds / 60) })}</div>
               </div>
               <span class="phase-check">${isDone ? '✅' : '›'}</span>
             </button>
@@ -466,10 +531,10 @@ function renderTraining() {
       </div>
 
       ${done
-        ? `<div class="session-done-banner">🎉 Тренировка выполнена!</div>`
+        ? `<div class="session-done-banner">${t('workoutDoneBanner')}</div>`
         : trainingState.completedPhases.length === week.phases.length
-          ? `<button class="btn-complete" onclick="finishSession()">Завершить тренировку 🎉</button>`
-          : `<div class="training-hint">Выполни все 5 этапов последовательно</div>`
+          ? `<button class="btn-complete" onclick="finishSession()">${t('finishWorkout')}</button>`
+          : `<div class="training-hint">${t('doAllPhases')}</div>`
       }
     </div>
     ${renderNav('')}
@@ -485,7 +550,7 @@ function startPhase(phaseIndex) {
 // ═══════════════════════════════════════════════
 function renderPhase() {
   const { weekNum, dayNum, phaseIndex } = trainingState;
-  const week = PROGRAM.weeks[weekNum - 1];
+  const week = getWeek(weekNum);
   const phase = week.phases[phaseIndex];
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
@@ -493,7 +558,7 @@ function renderPhase() {
   appEl.innerHTML = `
     <div class="view phase-view" style="--phase-color: ${phase.color}">
       <div class="phase-header">
-        <button class="back-btn" onclick="stopTimer(); stopBreathing(); navigate('training')">← Назад</button>
+        <button class="back-btn" onclick="stopTimer(); stopBreathing(); navigate('training')">${t('back')}</button>
         <div class="phase-title-bar">
           ${phase.emoji} ${phase.title}
         </div>
@@ -516,8 +581,8 @@ function renderPhase() {
       </div>
 
       <div class="timer-controls">
-        <button class="btn-timer-start" onclick="runPhaseTimer()">▶ Старт</button>
-        <button id="pause-btn" class="btn-timer-pause" onclick="togglePause()">⏸ Пауза</button>
+        <button class="btn-timer-start" onclick="runPhaseTimer()">${t('tStart')}</button>
+        <button id="pause-btn" class="btn-timer-pause" onclick="togglePause()">${t('tPause')}</button>
       </div>
 
       ${phase.breathingPattern ? renderBreathingGuide(phase.breathingPattern) : ''}
@@ -535,7 +600,7 @@ function renderPhase() {
 
       <div class="phase-footer">
         <button class="btn-phase-done" onclick="markPhaseDone('${phase.id}')">
-          Этап выполнен ✓
+          ${t('phaseDone')}
         </button>
       </div>
     </div>
@@ -546,10 +611,10 @@ function renderPhase() {
 
 function runPhaseTimer() {
   const { weekNum, phaseIndex } = trainingState;
-  const phase = PROGRAM.weeks[weekNum - 1].phases[phaseIndex];
+  const phase = getWeek(weekNum).phases[phaseIndex];
 
   document.querySelector('.btn-timer-start').disabled = true;
-  document.querySelector('.btn-timer-start').textContent = '⏱ Идёт...';
+  document.querySelector('.btn-timer-start').textContent = t('tRunning');
 
   if (phase.breathingPattern) {
     const container = document.querySelector('.breathing-guide');
@@ -558,9 +623,9 @@ function runPhaseTimer() {
 
   startTimer(phase.seconds, updateTimerUI, () => {
     const label = document.getElementById('timer-label');
-    if (label) label.textContent = 'Готово!';
+    if (label) label.textContent = t('tReady');
     const startBtn = document.querySelector('.btn-timer-start');
-    if (startBtn) { startBtn.disabled = false; startBtn.textContent = '▶ Повторить'; }
+    if (startBtn) { startBtn.disabled = false; startBtn.textContent = t('tRepeat'); }
     stopBreathing();
   });
 }
@@ -572,7 +637,7 @@ function markPhaseDone(phaseId) {
   stopTimer();
   stopBreathing();
 
-  const week = PROGRAM.weeks[trainingState.weekNum - 1];
+  const week = getWeek(trainingState.weekNum);
   const allDone = week.phases.every(p => trainingState.completedPhases.includes(p.id));
 
   if (allDone) {
@@ -609,30 +674,31 @@ function renderBreathingGuide(pattern) {
 let phaseReadingIdx = 0;
 
 function renderPhaseReading(weekNum, dayNum) {
-  const texts = (typeof READING_TEXTS !== 'undefined') ? READING_TEXTS : [];
+  const texts = getReadingTexts();
   if (!texts.length) return '';
   phaseReadingIdx = (((weekNum - 1) * 7 + (dayNum - 1)) % texts.length + texts.length) % texts.length;
   return `<div id="phase-reading">${phaseReadingCardHTML()}</div>`;
 }
 
 function phaseReadingCardHTML() {
-  const t = READING_TEXTS[phaseReadingIdx];
+  const texts = getReadingTexts();
+  const item = texts[phaseReadingIdx % texts.length];
   return `
     <div class="phase-reading-card">
       <div class="phase-reading-head">
-        <span class="reading-level">📖 ${t.level}</span>
-        <button type="button" class="phase-reading-next" onclick="cyclePhaseReading()">🔀 Другой текст</button>
+        <span class="reading-level">📖 ${item.level}</span>
+        <button type="button" class="phase-reading-next" onclick="cyclePhaseReading()">${t('anotherText')}</button>
       </div>
-      <div class="phase-reading-title">${t.title}</div>
-      <div class="phase-reading-body">${t.text.replace(/\n/g, '<br>')}</div>
-      <div class="reading-source">${t.author} · ${t.source}</div>
-      <div class="phase-reading-hint">Мало на 4 минуты? Читай медленно и 2–3 раза, или жми «Другой текст».</div>
+      <div class="phase-reading-title">${item.title}</div>
+      <div class="phase-reading-body">${item.text.replace(/\n/g, '<br>')}</div>
+      <div class="reading-source">${item.author} · ${item.source}</div>
+      <div class="phase-reading-hint">${t('readingHint')}</div>
     </div>
   `;
 }
 
 function cyclePhaseReading() {
-  phaseReadingIdx = (phaseReadingIdx + 1) % READING_TEXTS.length;
+  phaseReadingIdx = (phaseReadingIdx + 1) % getReadingTexts().length;
   const wrap = document.getElementById('phase-reading');
   if (wrap) wrap.innerHTML = phaseReadingCardHTML();
 }
@@ -640,16 +706,16 @@ function cyclePhaseReading() {
 function renderTwisters(twisters) {
   return `
     <div class="twisters-section">
-      <div class="twisters-title">Скороговорки</div>
+      <div class="twisters-title">${t('twistersTitle')}</div>
       <div class="twisters-cards" id="twisters-wrap">
-        ${twisters.map((t, i) => `
+        ${twisters.map((tw, i) => `
           <div class="twister-card" data-idx="${i}">
             <div class="twister-num">${i + 1}</div>
-            <div class="twister-text">${t.replace(/\n/g, '<br>')}</div>
+            <div class="twister-text">${tw.replace(/\n/g, '<br>')}</div>
             <div class="twister-speeds">
-              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 60)">🐢 Медленно</button>
-              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 104)">🚶 Средне</button>
-              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 152)">🏃 Быстро</button>
+              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 60)">${t('speedSlow')}</button>
+              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 104)">${t('speedMedium')}</button>
+              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 152)">${t('speedFast')}</button>
             </div>
           </div>
         `).join('')}
@@ -717,9 +783,9 @@ function renderCameraTopics(topics, day) {
   const todayTopic = topics[(day - 1) % topics.length];
   return `
     <div class="camera-topic-section">
-      <div class="camera-topic-label">📹 Тема дня:</div>
+      <div class="camera-topic-label">${t('cameraOfDay')}</div>
       <div class="camera-topic-text">${todayTopic}</div>
-      <div class="camera-all-label">Все темы:</div>
+      <div class="camera-all-label">${t('cameraAll')}</div>
       ${topics.map((t, i) => `
         <div class="camera-topic-item ${t === todayTopic ? 'active' : ''}">
           <span class="topic-num">${i + 1}</span> ${t}
@@ -732,13 +798,13 @@ function renderCameraTopics(topics, day) {
 function renderParasiteCounter() {
   return `
     <div class="parasite-counter">
-      <div class="parasite-title">🔢 Счётчик паразитов</div>
+      <div class="parasite-title">${t('parasiteTitle')}</div>
       <div class="parasite-rows">
         ${[
-          { label: '«Эээ...»', key: 'eee' },
-          { label: '«Ну...»', key: 'nu' },
-          { label: '«Типа/как бы»', key: 'typa' },
-          { label: '«Короче»', key: 'koroche' },
+          { label: t('pEee'), key: 'eee' },
+          { label: t('pNu'), key: 'nu' },
+          { label: t('pTypa'), key: 'typa' },
+          { label: t('pKoroche'), key: 'koroche' },
         ].map(p => `
           <div class="parasite-row">
             <span class="parasite-label">${p.label}</span>
@@ -750,7 +816,7 @@ function renderParasiteCounter() {
           </div>
         `).join('')}
       </div>
-      <button class="btn-save-parasite" onclick="saveParasiteCount()">💾 Записать результат</button>
+      <button class="btn-save-parasite" onclick="saveParasiteCount()">${t('saveParasite')}</button>
       <div id="parasite-saved" class="parasite-saved"></div>
     </div>
   `;
@@ -779,7 +845,7 @@ function saveParasiteCount() {
   autoSaveToGist();
 
   const el = document.getElementById('parasite-saved');
-  if (el) el.textContent = `✅ Записано: ${total} слов-паразитов. Смотри динамику во вкладке «Прогресс».`;
+  if (el) el.textContent = tf('parasiteSaved', { n: total });
 }
 
 const parasiteCounts = {};
@@ -793,16 +859,16 @@ function changeCount(key, delta) {
 function renderAssessmentForm(weekNum, isFinal) {
   const saved = state.assessments[weekNum] || {};
   const criteria = [
-    { key: 'diction', label: 'Чёткость дикции' },
-    { key: 'tempo', label: 'Темп речи' },
-    { key: 'voice', label: 'Уверенность голоса' },
-    { key: 'intonation', label: 'Интонация' },
-    { key: 'structure', label: 'Структура мысли' },
-    { key: 'parasites', label: 'Мало слов-паразитов' },
+    { key: 'diction', label: t('aDiction') },
+    { key: 'tempo', label: t('aTempo') },
+    { key: 'voice', label: t('aVoice') },
+    { key: 'intonation', label: t('aIntonation') },
+    { key: 'structure', label: t('aStructure') },
+    { key: 'parasites', label: t('aParasites') },
   ];
   return `
     <div class="assessment-form" id="assessment-form">
-      <div class="assessment-title">${isFinal ? '🏆 Финальная оценка' : '📊 Самооценка — Неделя ' + weekNum}</div>
+      <div class="assessment-title">${isFinal ? t('assessFinal') : tf('assessSelf', { n: weekNum })}</div>
       ${criteria.map(c => `
         <div class="assess-row">
           <div class="assess-label">${c.label}</div>
@@ -816,8 +882,8 @@ function renderAssessmentForm(weekNum, isFinal) {
           </div>
         </div>
       `).join('')}
-      <button class="btn-save-assess" onclick="saveAssessmentFromForm(${weekNum})">Сохранить оценку</button>
-      ${saved.at ? `<div class="assess-saved">✅ Сохранено</div>` : ''}
+      <button class="btn-save-assess" onclick="saveAssessmentFromForm(${weekNum})">${t('saveAssess')}</button>
+      ${saved.at ? `<div class="assess-saved">${t('saved')}</div>` : ''}
     </div>
   `;
 }
@@ -842,7 +908,7 @@ function saveAssessmentFromForm(weekNum) {
   if (saved) { saved.style.display = 'block'; }
   else {
     const form = document.getElementById('assessment-form');
-    if (form) form.insertAdjacentHTML('beforeend', '<div class="assess-saved">✅ Сохранено</div>');
+    if (form) form.insertAdjacentHTML('beforeend', `<div class="assess-saved">${t('saved')}</div>`);
   }
 }
 
@@ -864,23 +930,23 @@ function renderDone() {
   appEl.innerHTML = `
     <div class="view done-view">
       <div class="done-confetti">🎉</div>
-      <div class="done-title">Тренировка завершена!</div>
-      <div class="done-sub">Неделя ${weekNum} · День ${dayNum}</div>
+      <div class="done-title">${t('doneTitle')}</div>
+      <div class="done-sub">${t('week')} ${weekNum} · ${t('day')} ${dayNum}</div>
       <div class="done-stats">
         <div class="done-stat">
           <div class="done-stat-num">${state.streak}</div>
-          <div class="done-stat-label">🔥 дней подряд</div>
+          <div class="done-stat-label">${t('doneStreak')}</div>
         </div>
         <div class="done-stat">
           <div class="done-stat-num">${totalCompleted()}</div>
-          <div class="done-stat-label">✅ всего тренировок</div>
+          <div class="done-stat-label">${t('doneWorkouts')}</div>
         </div>
       </div>
       <div class="done-message">${getDoneMessage()}</div>
-      <button class="btn-home" onclick="navigate('home')">← На главную</button>
+      <button class="btn-home" onclick="navigate('home')">${t('homeBtn')}</button>
       ${state.currentWeek <= 8 && !isSessionDone(state.currentWeek, state.currentDay)
         ? `<button class="btn-next-day" onclick="startTraining(${state.currentWeek}, ${state.currentDay})">
-             Следующий день →
+             ${t('nextDay')}
            </button>`
         : ''
       }
@@ -889,14 +955,8 @@ function renderDone() {
 }
 
 function getDoneMessage() {
-  const msgs = [
-    'Речь тренируется каждый день. Ты на правильном пути.',
-    'Каждая тренировка — шаг к уверенной речи.',
-    'Главное: не скорость, а чистота и систематичность.',
-    'Пауза = уверенность. Ты это уже знаешь.',
-    'Продолжай. Результат накапливается незаметно.',
-  ];
-  return msgs[Math.floor(Math.random() * msgs.length)];
+  const msgs = t('doneMsgs') || [];
+  return msgs[Math.floor(Math.random() * msgs.length)] || '';
 }
 
 function finishSession() {
@@ -910,11 +970,12 @@ function renderProgram() {
   appEl.innerHTML = `
     <div class="view program-view">
       <div class="page-header">
-        <div class="page-title">📋 Программа 8 недель</div>
-        <div class="page-sub">20 минут в день</div>
+        <div class="page-title">${t('programTitle')}</div>
+        <div class="page-sub">${t('programSub')}</div>
       </div>
       <div class="weeks-list">
-        ${PROGRAM.weeks.map(week => {
+        ${PROGRAM.weeks.map(baseWeek => {
+          const week = getWeek(baseWeek.id);
           const weekDone = Array.from({ length: 7 }, (_, i) => isSessionDone(week.id, i + 1)).filter(Boolean).length;
           const isCurrent = week.id === state.currentWeek;
           const isLocked = week.id > state.currentWeek;
@@ -924,7 +985,7 @@ function renderProgram() {
               <div class="week-card-header">
                 <div class="week-icon">${week.icon}</div>
                 <div class="week-info">
-                  <div class="week-num">Неделя ${week.id}</div>
+                  <div class="week-num">${t('week')} ${week.id}</div>
                   <div class="week-card-title">${week.title}</div>
                 </div>
                 <div class="week-progress-wrap">
@@ -945,18 +1006,18 @@ function renderProgram() {
       </div>
 
       <div class="daily-template-card">
-        <div class="template-title">⏱ Ежедневный шаблон — 20 минут</div>
+        <div class="template-title">${t('dailyTemplate')}</div>
         ${[
-          { emoji: '💨', title: 'Дыхание', min: 3, color: '#6366F1' },
-          { emoji: '👄', title: 'Артикуляция', min: 5, color: '#EC4899' },
-          { emoji: '🗣️', title: 'Дикция', min: 4, color: '#F59E0B' },
-          { emoji: '🎵', title: 'Голос', min: 3, color: '#10B981' },
-          { emoji: '🎙️', title: 'Речь', min: 5, color: '#8B5CF6' },
+          { emoji: '💨', title: t('tplBreathing'), min: 3, color: '#6366F1' },
+          { emoji: '👄', title: t('tplArticulation'), min: 5, color: '#EC4899' },
+          { emoji: '🗣️', title: t('tplDiction'), min: 4, color: '#F59E0B' },
+          { emoji: '🎵', title: t('tplVoice'), min: 3, color: '#10B981' },
+          { emoji: '🎙️', title: t('tplSpeech'), min: 5, color: '#8B5CF6' },
         ].map(p => `
           <div class="template-row" style="--c: ${p.color}">
             <span class="template-emoji">${p.emoji}</span>
             <span class="template-name">${p.title}</span>
-            <span class="template-mins">${p.min} мин</span>
+            <span class="template-mins">${tf('minShort', { n: p.min })}</span>
           </div>
         `).join('')}
       </div>
@@ -966,31 +1027,31 @@ function renderProgram() {
 }
 
 function showWeekDetail(weekNum) {
-  const week = PROGRAM.weeks[weekNum - 1];
+  const week = getWeek(weekNum);
   appEl.innerHTML = `
     <div class="view week-detail-view">
       <div class="training-header">
-        <button class="back-btn" onclick="navigate('program')">← Назад</button>
-        <div class="training-title">${week.icon} Неделя ${weekNum}</div>
+        <button class="back-btn" onclick="navigate('program')">${t('back')}</button>
+        <div class="training-title">${week.icon} ${t('week')} ${weekNum}</div>
         <div></div>
       </div>
       <div class="week-detail-title">${week.title}</div>
       <div class="week-detail-goal">${week.goal}</div>
       <div class="tip-card"><div class="tip-label">💡</div><div class="tip-text">${week.tip}</div></div>
 
-      <div class="section-title">Этапы тренировки</div>
+      <div class="section-title">${t('phasesTitle')}</div>
       ${week.phases.map(p => `
         <div class="phase-detail-card" style="border-left: 4px solid ${p.color}">
           <div class="phase-detail-header">
             <span>${p.emoji}</span>
             <span class="phase-detail-title">${p.title}</span>
-            <span class="phase-detail-time">${Math.round(p.seconds / 60)} мин</span>
+            <span class="phase-detail-time">${tf('minShort', { n: Math.round(p.seconds / 60) })}</span>
           </div>
           <div class="phase-detail-content">${formatContent(p.content)}</div>
         </div>
       `).join('')}
 
-      <div class="section-title">Дни</div>
+      <div class="section-title">${t('daysTitle')}</div>
       <div class="days-row">
         ${Array.from({ length: 7 }, (_, i) => {
           const d = i + 1;
@@ -1004,7 +1065,7 @@ function showWeekDetail(weekNum) {
       </div>
       <button class="btn-start" style="margin:16px 0 32px" onclick="startTraining(${weekNum}, ${
         state.currentWeek === weekNum ? state.currentDay : 1
-      })">Тренироваться →</button>
+      })">${t('trainBtn')}</button>
     </div>
     ${renderNav('program')}
   `;
@@ -1014,35 +1075,30 @@ function showWeekDetail(weekNum) {
 // READING VIEW — тексты для чтения вслух
 // ═══════════════════════════════════════════════
 function renderReading() {
-  const texts = (typeof READING_TEXTS !== 'undefined') ? READING_TEXTS : [];
+  const texts = getReadingTexts();
   appEl.innerHTML = `
     <div class="view reading-view">
       <div class="page-header">
-        <div class="page-title">📖 Тексты для чтения</div>
-        <div class="page-sub">Читай вслух — медленно и чисто</div>
+        <div class="page-title">${t('readingTitle')}</div>
+        <div class="page-sub">${t('readingSub')}</div>
       </div>
 
-      <div class="reading-tip">
-        💡 Проговаривай каждое окончание. После запятой — короткая пауза,
-        после точки — длинная. Не торопись заполнять тишину.
-      </div>
+      <div class="reading-tip">${t('readingTip')}</div>
 
       <div class="reading-list">
-        ${texts.map(t => `
+        ${texts.map(item => `
           <div class="reading-card">
             <div class="reading-card-top">
-              <span class="reading-level">${t.level}</span>
+              <span class="reading-level">${item.level}</span>
             </div>
-            <div class="reading-title">${t.title}</div>
-            <div class="reading-body">${t.text.replace(/\n/g, '<br>')}</div>
-            <div class="reading-source">${t.author} · ${t.source}</div>
+            <div class="reading-title">${item.title}</div>
+            <div class="reading-body">${item.text.replace(/\n/g, '<br>')}</div>
+            <div class="reading-source">${item.author} · ${item.source}</div>
           </div>
         `).join('')}
       </div>
 
-      <div class="reading-footer">
-        Все тексты — классика в общественном достоянии (public domain).
-      </div>
+      <div class="reading-footer">${t('readingFooter')}</div>
     </div>
     ${renderNav('reading')}
   `;
@@ -1058,34 +1114,35 @@ function renderProgress() {
   appEl.innerHTML = `
     <div class="view progress-view">
       <div class="page-header">
-        <div class="page-title">📈 Прогресс</div>
-        <div class="page-sub">Твои результаты</div>
+        <div class="page-title">${t('progressTitle')}</div>
+        <div class="page-sub">${t('progressSub')}</div>
       </div>
 
       <div class="progress-hero-stats">
         <div class="p-stat">
           <div class="p-stat-num">${state.streak}</div>
-          <div class="p-stat-label">🔥 Серия дней</div>
+          <div class="p-stat-label">${t('pStreak')}</div>
         </div>
         <div class="p-stat">
           <div class="p-stat-num">${totalDays}</div>
-          <div class="p-stat-label">✅ Тренировок</div>
+          <div class="p-stat-label">${t('pWorkouts')}</div>
         </div>
         <div class="p-stat">
           <div class="p-stat-num">${totalDays * 20}</div>
-          <div class="p-stat-label">⏱ Минут практики</div>
+          <div class="p-stat-label">${t('pMinutes')}</div>
         </div>
       </div>
 
-      <div class="section-title">По неделям</div>
-      ${PROGRAM.weeks.map(week => {
+      <div class="section-title">${t('byWeeks')}</div>
+      ${PROGRAM.weeks.map(baseWeek => {
+        const week = getWeek(baseWeek.id);
         const weekDone = Array.from({ length: 7 }, (_, i) => isSessionDone(week.id, i + 1)).filter(Boolean).length;
         const pct = Math.round((weekDone / 7) * 100);
         return `
           <div class="week-progress-row">
             <div class="wpr-header">
-              <span>${week.icon} Неделя ${week.id}</span>
-              <span class="wpr-count">${weekDone}/7 дней</span>
+              <span>${week.icon} ${t('week')} ${week.id}</span>
+              <span class="wpr-count">${tf('daysOf7', { n: weekDone })}</span>
             </div>
             <div class="wpr-bar"><div class="wpr-fill" style="width:${pct}%; background:${pct === 100 ? '#10B981' : '#6366F1'}"></div></div>
           </div>
@@ -1093,64 +1150,61 @@ function renderProgress() {
       }).join('')}
 
       ${Object.keys(state.assessments).length > 0 ? `
-        <div class="section-title">Самооценка</div>
+        <div class="section-title">${t('selfAssessTitle')}</div>
         ${renderAssessmentHistory()}
       ` : ''}
 
       ${(state.parasiteLog && state.parasiteLog.length > 0) ? `
-        <div class="section-title">🚫 Слова-паразиты</div>
+        <div class="section-title">${t('parasitesSection')}</div>
         ${renderParasiteChart()}
       ` : ''}
 
-      <div class="section-title">Цели программы</div>
+      <div class="section-title">${t('langTitle')}</div>
+      ${renderLangSwitch()}
+
+      <div class="section-title">${t('goalsTitle')}</div>
       <div class="goals-list">
-        ${[
-          '✅ Меньше «каши» и проглатывания окончаний',
-          '✅ Ниже зажим, ровнее голос',
-          '✅ Меньше «эээ», «ну», «короче»',
-          '✅ Убедительнее для продаж и переговоров',
-          '✅ Лучше темп, паузы, интонация',
-        ].map(g => `<div class="goal-item">${g}</div>`).join('')}
+        ${(t('goals') || []).map(g => `<div class="goal-item">${g}</div>`).join('')}
       </div>
 
-      <div class="section-title">☁️ Синхронизация</div>
+      <div class="section-title">${t('syncTitle')}</div>
       <div class="gist-sync-card">
         ${getGistConfig()?.token
-          ? `<div class="gist-connected">✅ Подключён к GitHub Gist</div>`
-          : `<div class="gist-hint">Сохраняй прогресс в облако — работает на любом устройстве и браузере</div>`
+          ? `<div class="gist-connected">${t('gistConnected')}</div>`
+          : `<div class="gist-hint">${t('gistHint')}</div>`
         }
         <div class="gist-btns">
-          <button id="gist-save-btn" class="btn-gist-save" onclick="saveToGist()">☁️ Сохранить</button>
-          <button id="gist-load-btn" class="btn-gist-load" onclick="loadFromGist()">📥 Загрузить</button>
+          <button id="gist-save-btn" class="btn-gist-save" onclick="saveToGist()">${t('gistSave')}</button>
+          <button id="gist-load-btn" class="btn-gist-load" onclick="loadFromGist()">${t('gistLoad')}</button>
         </div>
         <div id="gist-status" class="gist-status"></div>
         ${!getGistConfig()?.token
-          ? `<button class="btn-gist-setup" onclick="showGistSetup()">🔑 Подключить GitHub →</button>`
-          : `<button class="btn-gist-reset" onclick="resetGistConfig()">Изменить токен</button>`
+          ? `<button class="btn-gist-setup" onclick="showGistSetup()">${t('gistSetup')}</button>`
+          : `<button class="btn-gist-reset" onclick="resetGistConfig()">${t('gistChangeToken')}</button>`
         }
       </div>
 
       <div class="reset-section">
-        <button class="btn-reset" onclick="resetState()">Сбросить прогресс</button>
+        <button class="btn-reset" onclick="resetState()">${t('resetProgress')}</button>
       </div>
     </div>
     ${renderNav('progress')}
 
     <div id="gist-modal" class="gist-modal" style="display:none" onclick="if(event.target===this)hideGistModal()">
       <div class="gist-modal-inner">
-        <div class="gist-modal-title">🔑 Подключение GitHub</div>
+        <div class="gist-modal-title">${t('gmTitle')}</div>
         <div class="gist-steps">
-          <div class="gist-step"><span class="step-num">1</span>Нажми кнопку ниже — откроется GitHub</div>
-          <div class="gist-step"><span class="step-num">2</span>Нажми зелёную кнопку <b>"Generate token"</b></div>
-          <div class="gist-step"><span class="step-num">3</span>Скопируй токен и вставь сюда</div>
+          <div class="gist-step"><span class="step-num">1</span>${t('gmStep1')}</div>
+          <div class="gist-step"><span class="step-num">2</span>${t('gmStep2')}</div>
+          <div class="gist-step"><span class="step-num">3</span>${t('gmStep3')}</div>
         </div>
         <a href="https://github.com/settings/tokens/new?scopes=gist&description=SpeechTrainer"
-           target="_blank" class="btn-open-github">Открыть GitHub →</a>
+           target="_blank" class="btn-open-github">${t('gmOpen')}</a>
         <input id="gist-token-input" class="gist-token-input"
                type="password" placeholder="ghp_xxxxxxxxxxxxxxxx"
                autocomplete="off" autocorrect="off" spellcheck="false" />
-        <button class="btn-save-token" onclick="saveGistToken()">Сохранить и подключить</button>
-        <button class="btn-cancel-modal" onclick="hideGistModal()">Отмена</button>
+        <button class="btn-save-token" onclick="saveGistToken()">${t('gmSaveToken')}</button>
+        <button class="btn-cancel-modal" onclick="hideGistModal()">${t('gmCancel')}</button>
       </div>
     </div>
   `;
@@ -1163,9 +1217,9 @@ function renderParasiteChart() {
   const last = log[log.length - 1]?.total;
   let trend = '';
   if (log.length >= 2 && first != null) {
-    if (last < first) trend = `<div class="parasite-trend good">↓ Стало меньше: с ${first} до ${last}. Так держать!</div>`;
-    else if (last > first) trend = `<div class="parasite-trend bad">↑ Пока больше: с ${first} до ${last}. Помни: хочешь «эээ» — молчи 1 секунду.</div>`;
-    else trend = `<div class="parasite-trend">→ Держится на уровне ${last}.</div>`;
+    if (last < first) trend = `<div class="parasite-trend good">${tf('trendGood', { a: first, b: last })}</div>`;
+    else if (last > first) trend = `<div class="parasite-trend bad">${tf('trendBad', { a: first, b: last })}</div>`;
+    else trend = `<div class="parasite-trend">${tf('trendSame', { b: last })}</div>`;
   }
   return `
     <div class="parasite-chart-card">
@@ -1190,12 +1244,12 @@ function renderParasiteChart() {
 
 function renderAssessmentHistory() {
   const criteria = [
-    { key: 'diction', label: 'Дикция' },
-    { key: 'tempo', label: 'Темп' },
-    { key: 'voice', label: 'Голос' },
-    { key: 'intonation', label: 'Интонация' },
-    { key: 'structure', label: 'Структура' },
-    { key: 'parasites', label: 'Без паразитов' },
+    { key: 'diction', label: t('aDiction') },
+    { key: 'tempo', label: t('aTempo') },
+    { key: 'voice', label: t('aVoice') },
+    { key: 'intonation', label: t('aIntonation') },
+    { key: 'structure', label: t('aStructure') },
+    { key: 'parasites', label: t('aParasites') },
   ];
   const weeks = Object.keys(state.assessments).sort();
   return `
@@ -1204,7 +1258,7 @@ function renderAssessmentHistory() {
         const scores = state.assessments[w];
         return `
           <div class="assess-history-card">
-            <div class="assess-history-week">Неделя ${w}</div>
+            <div class="assess-history-week">${t('week')} ${w}</div>
             ${criteria.map(c => `
               <div class="assess-history-row">
                 <span class="ahr-label">${c.label}</span>
@@ -1226,17 +1280,17 @@ function renderAssessmentHistory() {
 // ═══════════════════════════════════════════════
 function renderNav(active) {
   const tabs = [
-    { id: 'home', label: 'Главная', icon: '🏠' },
-    { id: 'program', label: 'Программа', icon: '📋' },
-    { id: 'reading', label: 'Тексты', icon: '📖' },
-    { id: 'progress', label: 'Прогресс', icon: '📈' },
+    { id: 'home', label: t('navHome'), icon: '🏠' },
+    { id: 'program', label: t('navProgram'), icon: '📋' },
+    { id: 'reading', label: t('navReading'), icon: '📖' },
+    { id: 'progress', label: t('navProgress'), icon: '📈' },
   ];
   return `
     <nav class="bottom-nav">
-      ${tabs.map(t => `
-        <button class="nav-btn ${active === t.id ? 'active' : ''}" onclick="navigate('${t.id}')">
-          <span class="nav-icon">${t.icon}</span>
-          <span class="nav-label">${t.label}</span>
+      ${tabs.map(tab => `
+        <button class="nav-btn ${active === tab.id ? 'active' : ''}" onclick="navigate('${tab.id}')">
+          <span class="nav-icon">${tab.icon}</span>
+          <span class="nav-label">${tab.label}</span>
         </button>
       `).join('')}
     </nav>
@@ -1258,7 +1312,7 @@ function saveGistConfig(cfg) {
 }
 
 function resetGistConfig() {
-  if (!confirm('Отключить текущий токен?')) return;
+  if (!confirm(t('confirmResetGist'))) return;
   localStorage.removeItem(GIST_CONFIG_KEY);
   navigate('progress');
 }
@@ -1267,7 +1321,7 @@ async function saveToGist() {
   const cfg = getGistConfig();
   if (!cfg?.token) { showGistSetup(); return; }
 
-  setGistBtn('save', 'Сохраняем...', true);
+  setGistBtn('save', t('savingBtn'), true);
   try {
     const body = {
       description: 'Speech Trainer Progress',
@@ -1285,20 +1339,20 @@ async function saveToGist() {
     if (!res.ok) throw new Error(`GitHub вернул ${res.status}`);
     const data = await res.json();
     saveGistConfig({ ...cfg, gistId: data.id });
-    gistStatus('✅ Сохранено в облако!', 'ok');
+    gistStatus(t('gistSaveOk'), 'ok');
   } catch (e) {
-    gistStatus('❌ ' + e.message, 'err');
+    gistStatus(t('gistErr') + e.message, 'err');
   } finally {
-    setGistBtn('save', '☁️ Сохранить', false);
+    setGistBtn('save', t('gistSave'), false);
   }
 }
 
 async function loadFromGist() {
   const cfg = getGistConfig();
   if (!cfg?.token) { showGistSetup(); return; }
-  if (!cfg?.gistId) { gistStatus('Сначала сохрани прогресс', 'err'); return; }
+  if (!cfg?.gistId) { gistStatus(t('gistSaveFirst'), 'err'); return; }
 
-  setGistBtn('load', 'Загружаем...', true);
+  setGistBtn('load', t('loadingBtn'), true);
   try {
     const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
       headers: gistHeaders(cfg.token),
@@ -1306,15 +1360,15 @@ async function loadFromGist() {
     if (!res.ok) throw new Error(`GitHub вернул ${res.status}`);
     const data = await res.json();
     const content = data.files[GIST_FILENAME]?.content;
-    if (!content) throw new Error('Файл не найден в Gist');
+    if (!content) throw new Error(t('gistFileNotFound'));
     Object.assign(state, JSON.parse(content));
     saveState();
-    gistStatus('✅ Прогресс загружен!', 'ok');
+    gistStatus(t('gistLoadOk'), 'ok');
     setTimeout(() => navigate('home'), 1200);
   } catch (e) {
-    gistStatus('❌ ' + e.message, 'err');
+    gistStatus(t('gistErr') + e.message, 'err');
   } finally {
-    setGistBtn('load', '📥 Загрузить', false);
+    setGistBtn('load', t('gistLoad'), false);
   }
 }
 
@@ -1350,7 +1404,7 @@ function saveGistToken() {
   const input = document.getElementById('gist-token-input');
   const token = input?.value?.trim();
   if (!token || !token.startsWith('ghp_')) {
-    alert('Токен должен начинаться с ghp_');
+    alert(t('tokenError'));
     return;
   }
   const cfg = getGistConfig() || {};

@@ -102,6 +102,42 @@ p + p { margin-top: 8px; }
 .hero-title { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1; }
 .hero-sub { font-size: 13px; opacity: 0.85; margin-top: 3px; }
 
+/* ─── LANGUAGE SWITCH ─── */
+.hero-logo .lang-switch { margin-left: auto; }
+.lang-switch {
+  display: inline-flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 3px;
+}
+.progress-view .lang-switch,
+.program-view .lang-switch,
+.reading-view .lang-switch {
+  margin: 0 16px;
+  background: var(--border);
+  display: flex;
+}
+.lang-btn {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: inherit;
+  opacity: 0.7;
+  padding: 6px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hero .lang-btn { color: #fff; }
+.progress-view .lang-btn { color: var(--text); }
+.lang-btn.active {
+  background: #fff;
+  color: var(--primary);
+  opacity: 1;
+}
+.hero .lang-btn.active { background: #fff; color: var(--primary); }
+
 /* ─── HOME STATS ─── */
 .home-stats {
   display: grid;
@@ -954,6 +990,8 @@ p + p { margin-top: 8px; }
   cursor: pointer;
 }
 .reminder-go:active { transform: scale(0.96); }
+/* Когда есть баннер, карточки статистики не «наезжают» вверх на него */
+.reminder-banner + .home-stats { margin-top: 12px; }
 
 /* ─── ТЕКСТ ДЛЯ ЧТЕНИЯ В УПРАЖНЕНИИ ─── */
 .phase-reading-card {
