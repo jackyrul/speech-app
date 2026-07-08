@@ -92,6 +92,14 @@ const UI = {
     confirmResetGist: 'Отключить текущий токен?',
     tplBreathing: 'Дыхание', tplArticulation: 'Артикуляция', tplDiction: 'Дикция', tplVoice: 'Голос', tplSpeech: 'Речь',
     pwaTitle: 'Установи как приложение', pwaSub: 'Safari → <b>Поделиться</b> → <b>«На экран "Домой"»</b>',
+    notifyTitle: '🔔 Напоминания',
+    notifyHint: 'Пуш-уведомление раз в день, если ты ещё не тренировался',
+    notifyEnable: '🔔 Включить напоминания', notifyReenable: '🔔 Обновить подписку',
+    notifyEnabled: '✅ Уведомления включены',
+    notifyDenied: '❌ Разрешение не выдано. Включи уведомления в настройках.',
+    notifyNeedGist: 'Сначала подключи GitHub (ниже) — туда сохраняется подписка',
+    notifyNeedInstall: 'Сначала добавь приложение на экран «Домой» (иначе iOS не даёт уведомления)',
+    notifyUnsupported: 'Этот браузер не поддерживает пуш-уведомления',
   },
 
   uk: {
@@ -174,6 +182,14 @@ const UI = {
     confirmResetGist: 'Відключити поточний токен?',
     tplBreathing: 'Дихання', tplArticulation: 'Артикуляція', tplDiction: 'Дикція', tplVoice: 'Голос', tplSpeech: 'Мовлення',
     pwaTitle: 'Встанови як застосунок', pwaSub: 'Safari → <b>Поділитися</b> → <b>«На екран "Домівка"»</b>',
+    notifyTitle: '🔔 Нагадування',
+    notifyHint: 'Пуш-сповіщення раз на день, якщо ти ще не тренувався',
+    notifyEnable: '🔔 Увімкнути нагадування', notifyReenable: '🔔 Оновити підписку',
+    notifyEnabled: '✅ Сповіщення увімкнено',
+    notifyDenied: '❌ Дозвіл не надано. Увімкни сповіщення в налаштуваннях.',
+    notifyNeedGist: 'Спочатку підключи GitHub (нижче) — туди зберігається підписка',
+    notifyNeedInstall: 'Спочатку додай застосунок на екран «Домівка» (інакше iOS не дає сповіщень)',
+    notifyUnsupported: 'Цей браузер не підтримує пуш-сповіщення',
   },
 
   en: {
@@ -256,6 +272,14 @@ const UI = {
     confirmResetGist: 'Disconnect the current token?',
     tplBreathing: 'Breathing', tplArticulation: 'Articulation', tplDiction: 'Diction', tplVoice: 'Voice', tplSpeech: 'Speech',
     pwaTitle: 'Install as an app', pwaSub: 'Safari → <b>Share</b> → <b>"Add to Home Screen"</b>',
+    notifyTitle: '🔔 Reminders',
+    notifyHint: 'A push notification once a day if you haven\'t trained yet',
+    notifyEnable: '🔔 Enable reminders', notifyReenable: '🔔 Refresh subscription',
+    notifyEnabled: '✅ Notifications enabled',
+    notifyDenied: '❌ Permission not granted. Enable notifications in settings.',
+    notifyNeedGist: 'Connect GitHub first (below) — the subscription is stored there',
+    notifyNeedInstall: 'Add the app to your Home Screen first (otherwise iOS blocks notifications)',
+    notifyUnsupported: 'This browser does not support push notifications',
   },
 };
 
