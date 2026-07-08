@@ -6,5 +6,11 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="115" fill="url(#bg)"/>
-  <text x="256" y="345" font-size="290" text-anchor="middle" dominant-baseline="auto">🗣️</text>
+  <g fill="#fff">
+    <rect x="112" y="181" width="40" height="150" rx="20"/>
+    <rect x="174" y="132" width="40" height="248" rx="20"/>
+    <rect x="236" y="96"  width="40" height="320" rx="20"/>
+    <rect x="298" y="156" width="40" height="200" rx="20"/>
+    <rect x="360" y="121" width="40" height="270" rx="20"/>
+  </g>
 </svg>

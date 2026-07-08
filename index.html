@@ -21,7 +21,7 @@
   <link rel="apple-touch-icon" id="apple-touch-icon" href="icons/icon.svg">
 
   <script>
-    // Генерируем PNG иконку для iOS через canvas (emoji корректно рендерится)
+    // Генерируем PNG иконку для iOS через canvas (эквалайзер-логотип)
     (function () {
       try {
         var c = document.createElement('canvas');
@@ -34,10 +34,14 @@
         ctx.beginPath();
         ctx.roundRect(0, 0, 512, 512, 115);
         ctx.fill();
-        ctx.font = '300px serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('🗣️', 256, 270);
+        // Белые полосы эквалайзера [x, y, w, h]
+        ctx.fillStyle = '#fff';
+        [[112,181,40,150],[174,132,40,248],[236,96,40,320],[298,156,40,200],[360,121,40,270]]
+          .forEach(function (b) {
+            ctx.beginPath();
+            ctx.roundRect(b[0], b[1], b[2], b[3], 20);
+            ctx.fill();
+          });
         var link = document.getElementById('apple-touch-icon');
         if (link) link.href = c.toDataURL('image/png');
       } catch (e) {}
@@ -47,7 +51,18 @@
 <body>
   <div id="app">
     <div class="splash">
-      <div class="splash-icon">🗣️</div>
+      <svg class="splash-icon" viewBox="0 0 512 512" width="72" height="72" aria-label="Речевой">
+        <defs><linearGradient id="splashbg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs>
+        <rect width="512" height="512" rx="115" fill="url(#splashbg)"/>
+        <g fill="#fff">
+          <rect x="112" y="181" width="40" height="150" rx="20"/>
+          <rect x="174" y="132" width="40" height="248" rx="20"/>
+          <rect x="236" y="96"  width="40" height="320" rx="20"/>
+          <rect x="298" y="156" width="40" height="200" rx="20"/>
+          <rect x="360" y="121" width="40" height="270" rx="20"/>
+        </g>
+      </svg>
       <div class="splash-text">Загрузка...</div>
     </div>
   </div>
