@@ -525,6 +525,7 @@ function renderPhase() {
       <div class="phase-content-card">
         <div class="phase-content-text">${formatContent(phase.content)}</div>
 
+        ${phase.readingText ? renderPhaseReading(weekNum, dayNum) : ''}
         ${phase.twisters ? renderTwisters(phase.twisters) : ''}
         ${phase.warmupList ? renderWarmupList(phase.warmupList) : ''}
         ${phase.cameraTopics ? renderCameraTopics(phase.cameraTopics, dayNum) : ''}
@@ -602,6 +603,38 @@ function renderBreathingGuide(pattern) {
       </div>
     </div>
   `;
+}
+
+// ─── Текст для чтения прямо в упражнении ───
+let phaseReadingIdx = 0;
+
+function renderPhaseReading(weekNum, dayNum) {
+  const texts = (typeof READING_TEXTS !== 'undefined') ? READING_TEXTS : [];
+  if (!texts.length) return '';
+  phaseReadingIdx = (((weekNum - 1) * 7 + (dayNum - 1)) % texts.length + texts.length) % texts.length;
+  return `<div id="phase-reading">${phaseReadingCardHTML()}</div>`;
+}
+
+function phaseReadingCardHTML() {
+  const t = READING_TEXTS[phaseReadingIdx];
+  return `
+    <div class="phase-reading-card">
+      <div class="phase-reading-head">
+        <span class="reading-level">📖 ${t.level}</span>
+        <button type="button" class="phase-reading-next" onclick="cyclePhaseReading()">🔀 Другой текст</button>
+      </div>
+      <div class="phase-reading-title">${t.title}</div>
+      <div class="phase-reading-body">${t.text.replace(/\n/g, '<br>')}</div>
+      <div class="reading-source">${t.author} · ${t.source}</div>
+      <div class="phase-reading-hint">Мало на 4 минуты? Читай медленно и 2–3 раза, или жми «Другой текст».</div>
+    </div>
+  `;
+}
+
+function cyclePhaseReading() {
+  phaseReadingIdx = (phaseReadingIdx + 1) % READING_TEXTS.length;
+  const wrap = document.getElementById('phase-reading');
+  if (wrap) wrap.innerHTML = phaseReadingCardHTML();
 }
 
 function renderTwisters(twisters) {

@@ -933,25 +933,57 @@ p + p { margin-top: 8px; }
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 12px 16px 0;
-  padding: 12px 14px;
-  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
-  border: 1px solid #FCD34D;
-  border-radius: var(--radius-sm);
+  margin: 14px 16px 0;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--warn);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
-.reminder-text { flex: 1; font-size: 13px; line-height: 1.4; color: #78350F; }
-.reminder-text b { color: #B45309; }
+.reminder-text { flex: 1; font-size: 13px; line-height: 1.4; color: var(--text); }
+.reminder-text b { color: var(--warn); }
 .reminder-go {
   flex-shrink: 0;
-  background: #B45309;
+  background: var(--primary);
   color: #fff;
   font-size: 13px;
   font-weight: 700;
   border-radius: 20px;
-  padding: 8px 14px;
+  padding: 9px 16px;
   cursor: pointer;
 }
 .reminder-go:active { transform: scale(0.96); }
+
+/* ─── ТЕКСТ ДЛЯ ЧТЕНИЯ В УПРАЖНЕНИИ ─── */
+.phase-reading-card {
+  margin-top: 16px;
+  background: #F5F3FF;
+  border: 1px solid #DDD6FE;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+.phase-reading-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.phase-reading-next {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.phase-reading-next:active { transform: scale(0.95); }
+.phase-reading-title { font-size: 15px; font-weight: 800; margin-bottom: 8px; color: #4C1D95; }
+.phase-reading-body { font-size: 17px; line-height: 1.85; color: var(--text); }
+.phase-reading-hint { font-size: 12px; color: var(--text-muted); margin-top: 12px; line-height: 1.4; }
 
 /* ─── PARASITE SAVE + CHART ─── */
 .btn-save-parasite {
