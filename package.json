@@ -1,0 +1,9 @@
+{
+  "name": "speech-trainer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ежедневный тренажёр речи (PWA)",
+  "scripts": {
+    "test": "node --test"
+  }
+}
