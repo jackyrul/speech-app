@@ -10,6 +10,7 @@ let state = {
   currentDay: 1,
   completedSessions: {},
   assessments: {},
+  parasiteLog: [],
   streak: 0,
   lastActiveDate: null,
   startDate: null,
@@ -85,7 +86,7 @@ function totalCompleted() {
 function resetState() {
   if (!confirm('Сбросить весь прогресс? Это нельзя отменить.')) return;
   localStorage.removeItem(STORAGE_KEY);
-  state = { currentWeek: 1, currentDay: 1, completedSessions: {}, assessments: {}, streak: 0, lastActiveDate: null, startDate: todayStr() };
+  state = { currentWeek: 1, currentDay: 1, completedSessions: {}, assessments: {}, parasiteLog: [], streak: 0, lastActiveDate: null, startDate: todayStr() };
   navigate('home');
 }
 
@@ -184,50 +185,80 @@ function updateTimerUI(remaining, total) {
 // ═══════════════════════════════════════════════
 // BREATHING ANIMATION
 // ═══════════════════════════════════════════════
-let breathingInterval = null;
+let breathingRAF = null;
 
+// Плавная анимация дыхания на requestAnimationFrame + обратный отсчёт секунд
 function startBreathing(pattern, container) {
   stopBreathing();
-  const { inhale, hold, exhale } = pattern;
-  const total = inhale + hold + exhale;
+  const inhale = pattern.inhale;
+  const hold = pattern.hold || 0;
+  const exhale = pattern.exhale;
+  const cycleLen = inhale + hold + exhale;      // секунд в одном цикле
+  const maxCycles = pattern.cycles || 5;
+  const totalSec = cycleLen * maxCycles;
+
   const circle = container.querySelector('.breath-circle');
   const label = container.querySelector('.breath-label');
+  const count = container.querySelector('.breath-count');
   const counter = container.querySelector('.breath-counter');
   if (!circle) return;
-  let elapsed = 0;
-  let cycle = 0;
-  let maxCycles = pattern.cycles || 5;
 
-  function tick() {
-    const t = elapsed % total;
+  const LABELS = { inhale: 'Вдох', hold: 'Задержка', exhale: 'Выдох' };
+  const start = Date.now();
+  let lastPhase = null;
+
+  function frame() {
+    const elapsed = (Date.now() - start) / 1000;
+
+    if (elapsed >= totalSec) {
+      circle.style.transform = 'scale(0.6)';
+      circle.style.opacity = '0.6';
+      circle.dataset.phase = 'done';
+      if (label) label.textContent = 'Готово';
+      if (count) count.textContent = '✓';
+      if (counter) counter.textContent = `Цикл ${maxCycles} / ${maxCycles}`;
+      stopBreathing();
+      return;
+    }
+
+    const cycleIdx = Math.floor(elapsed / cycleLen);
+    const t = elapsed - cycleIdx * cycleLen;    // секунда внутри цикла
+    let phase, scale, remain;
+
     if (t < inhale) {
-      const p = t / inhale;
-      circle.style.transform = `scale(${0.6 + 0.4 * p})`;
-      circle.style.opacity = 0.6 + 0.4 * p;
-      if (label) label.textContent = 'Вдох';
+      phase = 'inhale';
+      scale = 0.6 + 0.4 * (t / inhale);
+      remain = Math.ceil(inhale - t);
     } else if (t < inhale + hold) {
-      circle.style.transform = 'scale(1)';
-      circle.style.opacity = '1';
-      if (label) label.textContent = hold > 0 ? 'Задержка' : 'Выдох';
+      phase = 'hold';
+      scale = 1;
+      remain = Math.ceil(inhale + hold - t);
     } else {
-      const p = (t - inhale - hold) / exhale;
-      circle.style.transform = `scale(${1 - 0.4 * p})`;
-      circle.style.opacity = 1 - 0.4 * p;
-      if (label) label.textContent = 'Выдох';
+      phase = 'exhale';
+      scale = 1 - 0.4 * ((t - inhale - hold) / exhale);
+      remain = Math.ceil(cycleLen - t);
     }
-    elapsed++;
-    if (elapsed % total === 0) {
-      cycle++;
-      if (counter) counter.textContent = `Цикл ${Math.min(cycle, maxCycles)} / ${maxCycles}`;
+
+    circle.style.transform = `scale(${scale.toFixed(3)})`;
+    circle.style.opacity = (0.55 + 0.45 * ((scale - 0.6) / 0.4)).toFixed(3);
+    if (count) count.textContent = Math.max(1, remain);
+
+    if (phase !== lastPhase) {
+      circle.dataset.phase = phase;
+      if (label) label.textContent = LABELS[phase];
+      if (navigator.vibrate) { try { navigator.vibrate(20); } catch (e) {} }
+      lastPhase = phase;
     }
+    if (counter) counter.textContent = `Цикл ${cycleIdx + 1} / ${maxCycles}`;
+
+    breathingRAF = requestAnimationFrame(frame);
   }
 
-  tick();
-  breathingInterval = setInterval(tick, 1000);
+  frame();
 }
 
 function stopBreathing() {
-  if (breathingInterval) { clearInterval(breathingInterval); breathingInterval = null; }
+  if (breathingRAF) { cancelAnimationFrame(breathingRAF); breathingRAF = null; }
 }
 
 // ═══════════════════════════════════════════════
@@ -241,6 +272,7 @@ const appEl = document.getElementById('app');
 function navigate(view, params) {
   stopTimer();
   stopBreathing();
+  stopMetronome();
   currentView = view;
   if (params) trainingState = params;
   render();
@@ -254,6 +286,7 @@ function render() {
     case 'phase':    renderPhase(); break;
     case 'done':     renderDone(); break;
     case 'program':  renderProgram(); break;
+    case 'reading':  renderReading(); break;
     case 'progress': renderProgress(); break;
   }
 }
@@ -264,6 +297,32 @@ function render() {
 function isStandalone() {
   return window.navigator.standalone === true ||
     window.matchMedia('(display-mode: standalone)').matches;
+}
+
+// Напоминание: не тренировался сегодня
+function renderReminderBanner() {
+  const trainedToday = state.lastActiveDate === todayStr();
+  const doneToday = isSessionDone(state.currentWeek, state.currentDay);
+  if (trainedToday || doneToday) return '';
+
+  const streak = state.streak || 0;
+  const msg = streak >= 2
+    ? `🔥 Серия <b>${streak} ${plural(streak, 'день', 'дня', 'дней')}</b> под угрозой — не пропусти сегодня!`
+    : `📅 Сегодня ты ещё не тренировался. 20 минут — и готово.`;
+
+  return `
+    <div class="reminder-banner">
+      <span class="reminder-text">${msg}</span>
+      <button class="reminder-go" onclick="startTraining(${state.currentWeek}, ${state.currentDay})">Начать →</button>
+    </div>
+  `;
+}
+
+function plural(n, one, few, many) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+  return many;
 }
 
 function renderHome() {
@@ -291,6 +350,8 @@ function renderHome() {
           <div class="hero-sub">20 минут в день</div>
         </div>
       </header>
+
+      ${renderReminderBanner()}
 
       <div class="home-stats">
         <div class="stat-card">
@@ -513,15 +574,17 @@ function markPhaseDone(phaseId) {
 
 function renderBreathingGuide(pattern) {
   const { inhale, hold, exhale } = pattern;
-  const holdLabel = hold > 0 ? ` → задержка ${hold}` : '';
+  const holdLabel = hold > 0 ? ` · задержка ${hold}` : '';
   return `
     <div class="breathing-guide">
       <div class="breath-circle-wrap">
-        <div class="breath-circle"></div>
+        <div class="breath-circle" data-phase="inhale">
+          <span class="breath-count">${inhale}</span>
+        </div>
         <div class="breath-label">Вдох</div>
       </div>
       <div class="breath-info">
-        <div class="breath-pattern">${inhale}${holdLabel} → выдох ${exhale}</div>
+        <div class="breath-pattern">Вдох ${inhale}${holdLabel} · выдох ${exhale}</div>
         <div class="breath-counter">Цикл 0 / ${pattern.cycles || 5}</div>
       </div>
     </div>
@@ -538,15 +601,57 @@ function renderTwisters(twisters) {
             <div class="twister-num">${i + 1}</div>
             <div class="twister-text">${t.replace(/\n/g, '<br>')}</div>
             <div class="twister-speeds">
-              <span class="speed-tag">🐢 Медленно</span>
-              <span class="speed-tag">🚶 Средне</span>
-              <span class="speed-tag">🏃 Быстро</span>
+              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 60)">🐢 Медленно</button>
+              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 104)">🚶 Средне</button>
+              <button type="button" class="speed-tag" onclick="toggleTwisterPace(this, 152)">🏃 Быстро</button>
             </div>
           </div>
         `).join('')}
       </div>
     </div>
   `;
+}
+
+// ─── Метроном для скороговорок ───
+let metroInterval = null;
+let metroCtx = null;
+let metroActiveTag = null;
+
+function toggleTwisterPace(el, bpm) {
+  const wasActive = metroActiveTag === el;
+  stopMetronome();
+  if (wasActive) return;          // повторный клик по той же — выключаем
+
+  metroActiveTag = el;
+  el.classList.add('pacing');
+  metroBeat();
+  metroInterval = setInterval(metroBeat, 60000 / bpm);
+}
+
+function metroBeat() {
+  try {
+    if (!metroCtx) metroCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (metroCtx.state === 'suspended') metroCtx.resume();
+    const o = metroCtx.createOscillator();
+    const g = metroCtx.createGain();
+    o.connect(g); g.connect(metroCtx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.18, metroCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, metroCtx.currentTime + 0.07);
+    o.start();
+    o.stop(metroCtx.currentTime + 0.07);
+  } catch (e) {}
+  if (metroActiveTag) {
+    const card = metroActiveTag.closest('.twister-card');
+    if (card) { card.classList.remove('beat'); void card.offsetWidth; card.classList.add('beat'); }
+  }
+}
+
+function stopMetronome() {
+  if (metroInterval) { clearInterval(metroInterval); metroInterval = null; }
+  document.querySelectorAll('.speed-tag.pacing').forEach(e => e.classList.remove('pacing'));
+  document.querySelectorAll('.twister-card.beat').forEach(e => e.classList.remove('beat'));
+  metroActiveTag = null;
 }
 
 function renderWarmupList(items) {
@@ -599,8 +704,36 @@ function renderParasiteCounter() {
           </div>
         `).join('')}
       </div>
+      <button class="btn-save-parasite" onclick="saveParasiteCount()">💾 Записать результат</button>
+      <div id="parasite-saved" class="parasite-saved"></div>
     </div>
   `;
+}
+
+function saveParasiteCount() {
+  const rows = [
+    { key: 'eee', label: '«Эээ...»' },
+    { key: 'nu', label: '«Ну...»' },
+    { key: 'typa', label: '«Типа/как бы»' },
+    { key: 'koroche', label: '«Короче»' },
+  ];
+  const breakdown = {};
+  let total = 0;
+  rows.forEach(r => { const v = parasiteCounts[r.key] || 0; breakdown[r.key] = v; total += v; });
+
+  if (!Array.isArray(state.parasiteLog)) state.parasiteLog = [];
+  state.parasiteLog.push({
+    at: new Date().toISOString(),
+    week: trainingState?.weekNum || state.currentWeek,
+    day: trainingState?.dayNum || state.currentDay,
+    total,
+    breakdown,
+  });
+  saveState();
+  autoSaveToGist();
+
+  const el = document.getElementById('parasite-saved');
+  if (el) el.textContent = `✅ Записано: ${total} слов-паразитов. Смотри динамику во вкладке «Прогресс».`;
 }
 
 const parasiteCounts = {};
@@ -832,6 +965,44 @@ function showWeekDetail(weekNum) {
 }
 
 // ═══════════════════════════════════════════════
+// READING VIEW — тексты для чтения вслух
+// ═══════════════════════════════════════════════
+function renderReading() {
+  const texts = (typeof READING_TEXTS !== 'undefined') ? READING_TEXTS : [];
+  appEl.innerHTML = `
+    <div class="view reading-view">
+      <div class="page-header">
+        <div class="page-title">📖 Тексты для чтения</div>
+        <div class="page-sub">Читай вслух — медленно и чисто</div>
+      </div>
+
+      <div class="reading-tip">
+        💡 Проговаривай каждое окончание. После запятой — короткая пауза,
+        после точки — длинная. Не торопись заполнять тишину.
+      </div>
+
+      <div class="reading-list">
+        ${texts.map(t => `
+          <div class="reading-card">
+            <div class="reading-card-top">
+              <span class="reading-level">${t.level}</span>
+            </div>
+            <div class="reading-title">${t.title}</div>
+            <div class="reading-body">${t.text.replace(/\n/g, '<br>')}</div>
+            <div class="reading-source">${t.author} · ${t.source}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="reading-footer">
+        Все тексты — классика в общественном достоянии (public domain).
+      </div>
+    </div>
+    ${renderNav('reading')}
+  `;
+}
+
+// ═══════════════════════════════════════════════
 // PROGRESS VIEW
 // ═══════════════════════════════════════════════
 function renderProgress() {
@@ -878,6 +1049,11 @@ function renderProgress() {
       ${Object.keys(state.assessments).length > 0 ? `
         <div class="section-title">Самооценка</div>
         ${renderAssessmentHistory()}
+      ` : ''}
+
+      ${(state.parasiteLog && state.parasiteLog.length > 0) ? `
+        <div class="section-title">🚫 Слова-паразиты</div>
+        ${renderParasiteChart()}
       ` : ''}
 
       <div class="section-title">Цели программы</div>
@@ -934,6 +1110,38 @@ function renderProgress() {
   `;
 }
 
+function renderParasiteChart() {
+  const log = (state.parasiteLog || []).slice(-12);
+  const max = Math.max(1, ...log.map(e => e.total));
+  const first = log[0]?.total;
+  const last = log[log.length - 1]?.total;
+  let trend = '';
+  if (log.length >= 2 && first != null) {
+    if (last < first) trend = `<div class="parasite-trend good">↓ Стало меньше: с ${first} до ${last}. Так держать!</div>`;
+    else if (last > first) trend = `<div class="parasite-trend bad">↑ Пока больше: с ${first} до ${last}. Помни: хочешь «эээ» — молчи 1 секунду.</div>`;
+    else trend = `<div class="parasite-trend">→ Держится на уровне ${last}.</div>`;
+  }
+  return `
+    <div class="parasite-chart-card">
+      <div class="parasite-chart">
+        ${log.map(e => {
+          const h = Math.round((e.total / max) * 100);
+          const d = new Date(e.at);
+          const lbl = `${d.getDate()}.${d.getMonth() + 1}`;
+          return `
+            <div class="pc-col" title="Неделя ${e.week}, день ${e.day}: ${e.total}">
+              <div class="pc-val">${e.total}</div>
+              <div class="pc-bar" style="height:${Math.max(4, h)}%"></div>
+              <div class="pc-lbl">${lbl}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      ${trend}
+    </div>
+  `;
+}
+
 function renderAssessmentHistory() {
   const criteria = [
     { key: 'diction', label: 'Дикция' },
@@ -974,6 +1182,7 @@ function renderNav(active) {
   const tabs = [
     { id: 'home', label: 'Главная', icon: '🏠' },
     { id: 'program', label: 'Программа', icon: '📋' },
+    { id: 'reading', label: 'Тексты', icon: '📖' },
     { id: 'progress', label: 'Прогресс', icon: '📈' },
   ];
   return `

@@ -371,31 +371,50 @@ p + p { margin-top: 8px; }
 .breathing-guide {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   margin: 0 16px 12px;
   background: #EEF2FF;
   border-radius: var(--radius-sm);
-  padding: 16px;
+  padding: 18px 16px;
 }
 .breath-circle-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  justify-content: center;
 }
 .breath-circle {
-  width: 60px;
-  height: 60px;
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
   background: linear-gradient(135deg, #6366F1, #8B5CF6);
   transform: scale(0.6);
-  transition: transform 1s ease-in-out, opacity 1s ease-in-out;
   opacity: 0.6;
+  /* transform управляется через requestAnimationFrame — без CSS-transition,
+     иначе анимация «дёргается». Плавным делаем только смену цвета фазы. */
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
 }
+.breath-count {
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+.breath-circle[data-phase="inhale"] { background: linear-gradient(135deg, #6366F1, #8B5CF6); box-shadow: 0 0 0 6px rgba(99,102,241,0.15); }
+.breath-circle[data-phase="hold"]   { background: linear-gradient(135deg, #0EA5E9, #6366F1); box-shadow: 0 0 0 6px rgba(14,165,233,0.18); }
+.breath-circle[data-phase="exhale"] { background: linear-gradient(135deg, #10B981, #0EA5E9); box-shadow: 0 0 0 6px rgba(16,185,129,0.15); }
+.breath-circle[data-phase="done"]   { background: linear-gradient(135deg, #10B981, #34D399); }
 .breath-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: #3730A3;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -432,13 +451,29 @@ p + p { margin-top: 8px; }
 }
 .twister-num { font-size: 11px; font-weight: 700; color: var(--warn); margin-bottom: 6px; text-transform: uppercase; }
 .twister-text { font-size: 15px; font-weight: 600; line-height: 1.4; }
-.twister-speeds { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.twister-speeds { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .speed-tag {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   background: #FEF3C7;
   color: #92400E;
+  border: 1px solid transparent;
   border-radius: 20px;
-  padding: 2px 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s, border-color 0.15s;
+}
+.speed-tag:active { transform: scale(0.94); }
+.speed-tag.pacing {
+  background: var(--warn);
+  color: #fff;
+  border-color: #92400E;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.4);
+}
+.twister-card { transition: box-shadow 0.08s ease, border-color 0.08s ease; }
+.twister-card.beat {
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.5);
+  border-left-color: #B45309;
 }
 
 /* ─── WARMUP LIST ─── */
@@ -881,6 +916,130 @@ p + p { margin-top: 8px; }
   .done-view {
     padding-top: calc(40px + env(safe-area-inset-top, 0px));
   }
+}
+
+/* ─── REMINDER BANNER ─── */
+.reminder-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 16px 0;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border: 1px solid #FCD34D;
+  border-radius: var(--radius-sm);
+}
+.reminder-text { flex: 1; font-size: 13px; line-height: 1.4; color: #78350F; }
+.reminder-text b { color: #B45309; }
+.reminder-go {
+  flex-shrink: 0;
+  background: #B45309;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.reminder-go:active { transform: scale(0.96); }
+
+/* ─── PARASITE SAVE + CHART ─── */
+.btn-save-parasite {
+  margin-top: 14px;
+  width: 100%;
+  padding: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.btn-save-parasite:active { transform: scale(0.98); }
+.parasite-saved { font-size: 13px; color: var(--ok, #10B981); margin-top: 10px; line-height: 1.4; }
+
+.parasite-chart-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 18px 14px 14px;
+  box-shadow: var(--shadow);
+}
+.parasite-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 130px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.pc-col {
+  flex: 1;
+  min-width: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 4px;
+}
+.pc-val { font-size: 12px; font-weight: 700; color: var(--text); }
+.pc-bar {
+  width: 100%;
+  max-width: 30px;
+  background: linear-gradient(180deg, #F59E0B, #EF4444);
+  border-radius: 6px 6px 0 0;
+  min-height: 4px;
+}
+.pc-lbl { font-size: 10px; color: var(--text-muted); }
+.parasite-trend { margin-top: 12px; font-size: 13px; line-height: 1.4; font-weight: 600; }
+.parasite-trend.good { color: #10B981; }
+.parasite-trend.bad { color: #EF4444; }
+
+/* ─── READING VIEW ─── */
+.reading-tip {
+  margin: 0 16px 16px;
+  padding: 14px;
+  background: #EEF2FF;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #3730A3;
+}
+.reading-list { display: flex; flex-direction: column; gap: 14px; padding: 0 16px; }
+.reading-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.reading-card-top { margin-bottom: 8px; }
+.reading-level {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  background: #EEF2FF;
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+.reading-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+.reading-body {
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--text);
+}
+.reading-source {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.reading-footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 20px 16px 8px;
 }
 
 /* iOS: убираем выделение при тапе */

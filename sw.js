@@ -1,6 +1,7 @@
 'use strict';
 
-const CACHE = 'speech-v2';
+// При каждом деплое меняем версию — старый кэш удаляется в activate.
+const CACHE = 'speech-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -26,19 +27,21 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // GitHub API — всегда сеть (Gist sync)
+  // GitHub API — всегда сеть (Gist sync), не кэшируем
   if (e.request.url.includes('api.github.com')) return;
   if (e.request.method !== 'GET') return;
 
+  // Network-first: онлайн — всегда свежая версия (обновления видны сразу),
+  // офлайн — отдаём из кэша. Так исчезает проблема «запушил, но не обновилось».
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
+    fetch(e.request)
+      .then(res => {
         if (res && res.status === 200 && res.type !== 'opaque') {
-          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
         }
         return res;
-      });
-    })
+      })
+      .catch(() => caches.match(e.request).then(cached => cached || caches.match('./index.html')))
   );
 });
