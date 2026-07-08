@@ -47,6 +47,7 @@ function completeSession(week, day) {
     advanceProgress(week, day);
   }
   saveState();
+  autoSaveToGist();
 }
 
 function updateStreak() {
@@ -1104,7 +1105,60 @@ function saveGistToken() {
 }
 
 // ═══════════════════════════════════════════════
+// GIST AUTO-SYNC HELPERS
+// ═══════════════════════════════════════════════
+
+// Silent save — called after each session, no UI feedback needed
+async function autoSaveToGist() {
+  const cfg = getGistConfig();
+  if (!cfg?.token) return;
+  try {
+    const body = {
+      description: 'Speech Trainer Progress',
+      public: false,
+      files: { [GIST_FILENAME]: { content: JSON.stringify(state, null, 2) } },
+    };
+    const url = cfg.gistId
+      ? `https://api.github.com/gists/${cfg.gistId}`
+      : 'https://api.github.com/gists';
+    const res = await fetch(url, {
+      method: cfg.gistId ? 'PATCH' : 'POST',
+      headers: gistHeaders(cfg.token),
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      saveGistConfig({ ...cfg, gistId: data.id });
+    }
+  } catch (e) {}
+}
+
+// On startup: if cloud has more progress than local, restore from cloud
+async function autoLoadFromGist() {
+  const cfg = getGistConfig();
+  if (!cfg?.token || !cfg?.gistId) return;
+  try {
+    const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: gistHeaders(cfg.token),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const content = data.files[GIST_FILENAME]?.content;
+    if (!content) return;
+    const remote = JSON.parse(content);
+    const localCount = Object.keys(state.completedSessions || {}).length;
+    const remoteCount = Object.keys(remote.completedSessions || {}).length;
+    if (remoteCount > localCount) {
+      Object.assign(state, remote);
+      saveState();
+      render();
+    }
+  } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 loadState();
 render();
+autoLoadFromGist();
