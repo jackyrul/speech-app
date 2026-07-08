@@ -346,8 +346,21 @@ function renderHome() {
       ` : ''}
       <header class="hero">
         <div class="hero-inner">
-          <div class="hero-title">🗣️ Речевой Тренажёр</div>
-          <div class="hero-sub">20 минут в день</div>
+          <div class="hero-logo">
+            <svg class="hero-mark" viewBox="0 0 512 512" aria-hidden="true">
+              <g fill="#fff">
+                <rect x="112" y="181" width="40" height="150" rx="20"/>
+                <rect x="174" y="132" width="40" height="248" rx="20"/>
+                <rect x="236" y="96"  width="40" height="320" rx="20"/>
+                <rect x="298" y="156" width="40" height="200" rx="20"/>
+                <rect x="360" y="121" width="40" height="270" rx="20"/>
+              </g>
+            </svg>
+            <div class="hero-wordmark">
+              <div class="hero-title">Речевой</div>
+              <div class="hero-sub">Тренажёр речи · 20 минут в день</div>
+            </div>
+          </div>
         </div>
       </header>
 
