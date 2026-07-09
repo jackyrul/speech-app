@@ -22,12 +22,11 @@ const MESSAGES = {
 
 // Основная логика с инъекцией зависимостей (fetch, webpush) — тестируема.
 async function run({ fetch, webpush, env, now = new Date(), log = console.log }) {
-  const {
-    VAPID_PUBLIC,
-    VAPID_PRIVATE,
-    VAPID_SUBJECT = 'mailto:speech-trainer@example.com',
-    GH_TOKEN,
-  } = env;
+  // .trim() — на случай, если в секрет попал пробел или перенос строки при вставке
+  const VAPID_PUBLIC = (env.VAPID_PUBLIC || '').trim();
+  const VAPID_PRIVATE = (env.VAPID_PRIVATE || '').trim();
+  const VAPID_SUBJECT = (env.VAPID_SUBJECT || 'mailto:speech-trainer@example.com').trim();
+  const GH_TOKEN = (env.GH_TOKEN || '').trim();
 
   if (!VAPID_PUBLIC || !VAPID_PRIVATE || !GH_TOKEN) {
     log('Missing secrets (VAPID_PUBLIC / VAPID_PRIVATE / GH_TOKEN) — skipping.');
