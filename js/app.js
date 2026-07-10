@@ -161,6 +161,7 @@ function resetState() {
 // TIMER — wall-clock based (iOS background-safe)
 // ═══════════════════════════════════════════════
 let timerInterval = null;
+let timerRAF = null;
 let timerEndTime = 0;      // Date.now() + duration ms
 let timerTotal = 0;
 let timerPaused = false;
@@ -176,16 +177,25 @@ function startTimer(seconds, onTick, onDone) {
   _onTick = onTick;
   _onDone = onDone;
 
+  // Логика завершения — по интервалу (переживает фон), отсчёт по wall-clock
   function tick() {
     if (timerPaused) return;
-    const remaining = Math.max(0, Math.ceil((timerEndTime - Date.now()) / 1000));
-    onTick(remaining, timerTotal);
-    if (remaining <= 0) { stopTimer(); playDone(); onDone(); }
+    const remaining = Math.max(0, timerEndTime - Date.now());
+    if (remaining <= 0) { onTick(0, timerTotal); stopTimer(); playDone(); onDone(); }
   }
 
-  tick();
-  // 500ms interval — точнее и восстанавливается быстрее после фона
-  timerInterval = setInterval(tick, 500);
+  // Плавная отрисовка круга — по requestAnimationFrame (дробные секунды)
+  function uiFrame() {
+    if (!timerPaused && timerEndTime > 0) {
+      const remaining = Math.max(0, (timerEndTime - Date.now()) / 1000);
+      onTick(remaining, timerTotal);
+    }
+    timerRAF = requestAnimationFrame(uiFrame);
+  }
+
+  onTick(seconds, timerTotal);
+  timerInterval = setInterval(tick, 250);
+  timerRAF = requestAnimationFrame(uiFrame);
   document.addEventListener('visibilitychange', _onVisibility);
 }
 
@@ -200,6 +210,7 @@ function _onVisibility() {
 
 function stopTimer() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (timerRAF) { cancelAnimationFrame(timerRAF); timerRAF = null; }
   document.removeEventListener('visibilitychange', _onVisibility);
   timerEndTime = 0;
   _onTick = null;
@@ -242,10 +253,12 @@ function updateTimerUI(remaining, total) {
   if (!circle || !label) return;
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  const progress = remaining / total;
+  // Круг — по дробным секундам (плавно), цифры — по целым
+  const progress = Math.max(0, Math.min(1, remaining / total));
   circle.style.strokeDashoffset = circumference * (1 - progress);
-  const m = Math.floor(remaining / 60);
-  const s = remaining % 60;
+  const whole = Math.max(0, Math.ceil(remaining));
+  const m = Math.floor(whole / 60);
+  const s = whole % 60;
   label.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
@@ -947,6 +960,20 @@ function formatContent(text) {
 // ═══════════════════════════════════════════════
 // DONE VIEW
 // ═══════════════════════════════════════════════
+function renderConfetti() {
+  const colors = ['#4F46E5', '#7C3AED', '#EC4899', '#F59E0B', '#10B981', '#0EA5E9'];
+  let html = '<div class="confetti-wrap" aria-hidden="true">';
+  for (let i = 0; i < 26; i++) {
+    const left = (Math.random() * 100).toFixed(1);
+    const delay = (Math.random() * 0.8).toFixed(2);
+    const dur = (2.2 + Math.random() * 1.6).toFixed(2);
+    const w = Math.round(6 + Math.random() * 6);
+    const rot = Math.floor(Math.random() * 360);
+    html += `<span style="left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;width:${w}px;height:${Math.round(w * 0.6)}px;background:${colors[i % colors.length]};transform:rotate(${rot}deg)"></span>`;
+  }
+  return html + '</div>';
+}
+
 function renderDone() {
   const { weekNum, dayNum } = trainingState;
   completeSession(weekNum, dayNum);
@@ -955,6 +982,7 @@ function renderDone() {
   if (dayNum === 7) { renderWeekDone(weekNum); return; }
 
   appEl.innerHTML = `
+    ${renderConfetti()}
     <div class="view done-view">
       <div class="done-confetti">🎉</div>
       <div class="done-title">${t('doneTitle')}</div>
@@ -993,6 +1021,7 @@ function renderWeekDone(weekNum) {
   const weekParasites = (state.parasiteLog || []).filter((e) => e.week === weekNum);
 
   appEl.innerHTML = `
+    ${renderConfetti()}
     <div class="view done-view week-done-view">
       <div class="done-confetti">🏆</div>
       <div class="done-title">${tf('wdTitle', { n: weekNum })}</div>
