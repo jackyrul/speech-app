@@ -16,6 +16,7 @@ let state = {
   startDate: null,
   lang: 'ru',
   pushEnabled: false,
+  dayProgress: null,
 };
 
 // ═══════════════════════════════════════════════
@@ -112,6 +113,7 @@ function completeSession(week, day) {
     updateStreak();
     advanceProgress(week, day);
   }
+  state.dayProgress = null;
   saveState();
   autoSaveToGist();
 }
@@ -395,6 +397,9 @@ function renderHome() {
   const week = getWeek(state.currentWeek);
   const done = isSessionDone(state.currentWeek, state.currentDay);
   const totalDays = totalCompleted();
+  const dp = state.dayProgress;
+  const resumable = !done && dp && dp.week === state.currentWeek &&
+    dp.day === state.currentDay && dp.completedPhases.length > 0;
 
   appEl.innerHTML = `
     <div class="view home-view">
@@ -463,7 +468,7 @@ function renderHome() {
         ${done
           ? `<div class="done-banner">${t('doneToday')}</div>`
           : `<button class="btn-start" onclick="startTraining(${week.id}, ${state.currentDay})">
-               ${t('startWorkout')}
+               ${resumable ? tf('resumeBtn', { n: dp.completedPhases.length }) : t('startWorkout')}
              </button>`
         }
       </div>
@@ -496,7 +501,12 @@ function renderHome() {
 // TRAINING VIEW — Phase selection
 // ═══════════════════════════════════════════════
 function startTraining(weekNum, dayNum) {
-  navigate('training', { weekNum, dayNum, completedPhases: [] });
+  // Восстанавливаем прерванную тренировку этого же дня
+  const dp = state.dayProgress;
+  const completedPhases = (dp && dp.week === weekNum && dp.day === dayNum && !isSessionDone(weekNum, dayNum))
+    ? [...dp.completedPhases]
+    : [];
+  navigate('training', { weekNum, dayNum, completedPhases });
 }
 
 function renderTraining() {
@@ -641,6 +651,13 @@ function markPhaseDone(phaseId) {
   if (!trainingState.completedPhases.includes(phaseId)) {
     trainingState.completedPhases = [...trainingState.completedPhases, phaseId];
   }
+  // Сохраняем прогресс дня — тренировку можно продолжить после закрытия
+  state.dayProgress = {
+    week: trainingState.weekNum,
+    day: trainingState.dayNum,
+    completedPhases: [...trainingState.completedPhases],
+  };
+  saveState();
   stopTimer();
   stopBreathing();
 
@@ -934,6 +951,9 @@ function renderDone() {
   const { weekNum, dayNum } = trainingState;
   completeSession(weekNum, dayNum);
 
+  // 7-й день — расширенный итог недели вместо обычного экрана
+  if (dayNum === 7) { renderWeekDone(weekNum); return; }
+
   appEl.innerHTML = `
     <div class="view done-view">
       <div class="done-confetti">🎉</div>
@@ -964,6 +984,45 @@ function renderDone() {
 function getDoneMessage() {
   const msgs = t('doneMsgs') || [];
   return msgs[Math.floor(Math.random() * msgs.length)] || '';
+}
+
+// Итог недели — после завершения 7-го дня
+function renderWeekDone(weekNum) {
+  const week = getWeek(weekNum);
+  const next = weekNum < 8 ? getWeek(weekNum + 1) : null;
+  const weekParasites = (state.parasiteLog || []).filter((e) => e.week === weekNum);
+
+  appEl.innerHTML = `
+    <div class="view done-view week-done-view">
+      <div class="done-confetti">🏆</div>
+      <div class="done-title">${tf('wdTitle', { n: weekNum })}</div>
+      <div class="done-sub">${week.icon} ${week.title}</div>
+      <div class="wd-note">${t('wdSub')}</div>
+      <div class="done-stats">
+        <div class="done-stat">
+          <div class="done-stat-num">${state.streak}</div>
+          <div class="done-stat-label">${t('doneStreak')}</div>
+        </div>
+        <div class="done-stat">
+          <div class="done-stat-num">${totalCompleted()}</div>
+          <div class="done-stat-label">${t('doneWorkouts')}</div>
+        </div>
+      </div>
+      ${weekParasites.length ? `
+        <div class="wd-section-title">${t('parasitesSection')}</div>
+        <div class="wd-chart">${renderParasiteChart()}</div>
+      ` : ''}
+      ${next
+        ? `<div class="wd-next-card">
+             <div class="wd-next-label">${tf('wdNext', { n: next.id })}</div>
+             <div class="wd-next-title">${next.icon} ${next.title}</div>
+             <div class="wd-next-goal">${next.goal}</div>
+           </div>`
+        : `<div class="wd-final">${t('wdFinal')}</div>`
+      }
+      <button class="btn-home" onclick="navigate('home')">${t('homeBtn')}</button>
+    </div>
+  `;
 }
 
 function finishSession() {
