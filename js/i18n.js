@@ -109,6 +109,11 @@ const UI = {
     recEmpty: 'Записей за этот день пока нет',
     recBefore: '📼 Твоя запись «до» — неделя 1',
     recDeleteConfirm: 'Удалить запись?',
+    resumeBtn: 'Продолжить ({n}/5) →',
+    wdTitle: '🏆 Неделя {n} завершена!',
+    wdSub: 'Все 7 дней позади. Отличная работа!',
+    wdNext: 'Дальше — неделя {n}',
+    wdFinal: '🎓 Вся программа пройдена! Сравни записи «до» и «после» в финальном упражнении.',
   },
 
   uk: {
@@ -208,6 +213,11 @@ const UI = {
     recEmpty: 'Записів за цей день поки немає',
     recBefore: '📼 Твій запис «до» — тиждень 1',
     recDeleteConfirm: 'Видалити запис?',
+    resumeBtn: 'Продовжити ({n}/5) →',
+    wdTitle: '🏆 Тиждень {n} завершено!',
+    wdSub: 'Усі 7 днів позаду. Чудова робота!',
+    wdNext: 'Далі — тиждень {n}',
+    wdFinal: '🎓 Уся програма пройдена! Порівняй записи «до» і «після» у фінальній вправі.',
   },
 
   en: {
@@ -307,6 +317,11 @@ const UI = {
     recEmpty: 'No recordings for this day yet',
     recBefore: '📼 Your "before" recording — week 1',
     recDeleteConfirm: 'Delete this recording?',
+    resumeBtn: 'Resume ({n}/5) →',
+    wdTitle: '🏆 Week {n} complete!',
+    wdSub: 'All 7 days behind you. Great work!',
+    wdNext: 'Next — week {n}',
+    wdFinal: '🎓 The whole program is done! Compare your "before" and "after" recordings in the final exercise.',
   },
 };
 
