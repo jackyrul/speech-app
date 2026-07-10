@@ -70,6 +70,8 @@ function setLang(lang) {
   saveState();
   autoSaveToGist();
   render();
+  // Переключатель в настройках — не закрываем модал после перерисовки
+  if (currentView === 'progress') showSettings();
 }
 
 function renderLangSwitch() {
@@ -114,6 +116,7 @@ function completeSession(week, day) {
     advanceProgress(week, day);
   }
   state.dayProgress = null;
+  state.onboarded = true;
   saveState();
   autoSaveToGist();
 }
@@ -153,7 +156,11 @@ function totalCompleted() {
 function resetState() {
   if (!confirm(t('confirmReset'))) return;
   localStorage.removeItem(STORAGE_KEY);
-  state = { currentWeek: 1, currentDay: 1, completedSessions: {}, assessments: {}, parasiteLog: [], streak: 0, lastActiveDate: null, startDate: todayStr(), lang: state.lang || 'ru' };
+  state = {
+    currentWeek: 1, currentDay: 1, completedSessions: {}, assessments: {}, parasiteLog: [],
+    streak: 0, lastActiveDate: null, startDate: todayStr(),
+    lang: state.lang || 'ru', pushEnabled: !!state.pushEnabled, dayProgress: null, onboarded: true,
+  };
   navigate('home');
 }
 
@@ -380,6 +387,51 @@ function isStandalone() {
     window.matchMedia('(display-mode: standalone)').matches;
 }
 
+// ─── Онбординг при первом запуске ───
+function renderOnboarding() {
+  if (state.onboarded || totalCompleted() > 0) return '';
+  const steps = [
+    { done: isStandalone(), label: t('obStep1'), hint: t('pwaSub'), action: '' },
+    { done: !!getGistConfig()?.token, label: t('obStep2'),
+      action: `<button class="ob-act" onclick="onboardingGist()">${t('obConnect')}</button>` },
+    { done: !!state.pushEnabled, label: t('obStep3'),
+      action: `<button class="ob-act" onclick="enablePush()">${t('obEnable')}</button>` },
+  ];
+  return `
+    <div class="ob-overlay">
+      <div class="ob-card">
+        <div class="ob-title">${t('obTitle')}</div>
+        <div class="ob-sub">${t('obSub')}</div>
+        ${steps.map((s, i) => `
+          <div class="ob-step ${s.done ? 'done' : ''}">
+            <span class="ob-check">${s.done ? '✅' : `<span class="ob-num">${i + 1}</span>`}</span>
+            <div class="ob-step-body">
+              <div class="ob-step-label">${s.label}</div>
+              ${!s.done && s.hint ? `<div class="ob-step-hint">${s.hint}</div>` : ''}
+            </div>
+            ${!s.done && s.action ? s.action : ''}
+          </div>
+        `).join('')}
+        <div id="push-status" class="gist-status ob-status"></div>
+        <button class="ob-start" onclick="dismissOnboarding()">${t('obStart')}</button>
+      </div>
+    </div>
+  `;
+}
+
+function dismissOnboarding() {
+  state.onboarded = true;
+  saveState();
+  render();
+}
+
+function onboardingGist() {
+  state.onboarded = true;
+  saveState();
+  navigate('progress');
+  setTimeout(() => { showSettings(); showGistSetup(); }, 100);
+}
+
 // Напоминание: не тренировался сегодня
 function renderReminderBanner() {
   const trainedToday = state.lastActiveDate === todayStr();
@@ -507,6 +559,7 @@ function renderHome() {
       ` : ''}
     </div>
     ${renderNav('home')}
+    ${renderOnboarding()}
   `;
 }
 
@@ -1208,9 +1261,12 @@ function renderProgress() {
 
   appEl.innerHTML = `
     <div class="view progress-view">
-      <div class="page-header">
-        <div class="page-title">${t('progressTitle')}</div>
-        <div class="page-sub">${t('progressSub')}</div>
+      <div class="page-header page-header-row">
+        <div>
+          <div class="page-title">${t('progressTitle')}</div>
+          <div class="page-sub">${t('progressSub')}</div>
+        </div>
+        <button class="settings-gear" onclick="showSettings()" aria-label="${t('settingsTitle')}">⚙️</button>
       </div>
 
       <div class="progress-hero-stats">
@@ -1227,6 +1283,9 @@ function renderProgress() {
           <div class="p-stat-label">${t('pMinutes')}</div>
         </div>
       </div>
+
+      <div class="section-title">${t('heatmapTitle')}</div>
+      ${renderHeatmap()}
 
       <div class="section-title">${t('byWeeks')}</div>
       ${PROGRAM.weeks.map(baseWeek => {
@@ -1254,38 +1313,45 @@ function renderProgress() {
         ${renderParasiteChart()}
       ` : ''}
 
-      <div class="section-title">${t('langTitle')}</div>
-      ${renderLangSwitch()}
-
-      ${renderPushSection()}
-
       <div class="section-title">${t('goalsTitle')}</div>
       <div class="goals-list">
         ${(t('goals') || []).map(g => `<div class="goal-item">${g}</div>`).join('')}
       </div>
-
-      <div class="section-title">${t('syncTitle')}</div>
-      <div class="gist-sync-card">
-        ${getGistConfig()?.token
-          ? `<div class="gist-connected">${t('gistConnected')}</div>`
-          : `<div class="gist-hint">${t('gistHint')}</div>`
-        }
-        <div class="gist-btns">
-          <button id="gist-save-btn" class="btn-gist-save" onclick="saveToGist()">${t('gistSave')}</button>
-          <button id="gist-load-btn" class="btn-gist-load" onclick="loadFromGist()">${t('gistLoad')}</button>
-        </div>
-        <div id="gist-status" class="gist-status"></div>
-        ${!getGistConfig()?.token
-          ? `<button class="btn-gist-setup" onclick="showGistSetup()">${t('gistSetup')}</button>`
-          : `<button class="btn-gist-reset" onclick="resetGistConfig()">${t('gistChangeToken')}</button>`
-        }
-      </div>
-
-      <div class="reset-section">
-        <button class="btn-reset" onclick="resetState()">${t('resetProgress')}</button>
-      </div>
     </div>
     ${renderNav('progress')}
+
+    <div id="settings-modal" class="gist-modal settings-modal" style="display:none" onclick="if(event.target===this)hideSettings()">
+      <div class="gist-modal-inner settings-inner">
+        <div class="gist-modal-title">${t('settingsTitle')}</div>
+
+        <div class="settings-section-title">${t('langTitle')}</div>
+        ${renderLangSwitch()}
+
+        ${renderPushSection()}
+
+        <div class="settings-section-title">${t('syncTitle')}</div>
+        <div class="gist-sync-card">
+          ${getGistConfig()?.token
+            ? `<div class="gist-connected">${t('gistConnected')}</div>`
+            : `<div class="gist-hint">${t('gistHint')}</div>`
+          }
+          <div class="gist-btns">
+            <button id="gist-save-btn" class="btn-gist-save" onclick="saveToGist()">${t('gistSave')}</button>
+            <button id="gist-load-btn" class="btn-gist-load" onclick="loadFromGist()">${t('gistLoad')}</button>
+          </div>
+          <div id="gist-status" class="gist-status"></div>
+          ${!getGistConfig()?.token
+            ? `<button class="btn-gist-setup" onclick="showGistSetup()">${t('gistSetup')}</button>`
+            : `<button class="btn-gist-reset" onclick="resetGistConfig()">${t('gistChangeToken')}</button>`
+          }
+        </div>
+
+        <div class="reset-section">
+          <button class="btn-reset" onclick="resetState()">${t('resetProgress')}</button>
+        </div>
+        <button class="btn-cancel-modal" onclick="hideSettings()">${t('close')}</button>
+      </div>
+    </div>
 
     <div id="gist-modal" class="gist-modal" style="display:none" onclick="if(event.target===this)hideGistModal()">
       <div class="gist-modal-inner">
@@ -1305,6 +1371,32 @@ function renderProgress() {
       </div>
     </div>
   `;
+}
+
+// Карта тренировок: 8 недель × 7 дней
+function renderHeatmap() {
+  return `
+    <div class="heatmap-card">
+      ${PROGRAM.weeks.map((w) => `
+        <div class="hm-row">
+          <span class="hm-week">${w.id}</span>
+          ${Array.from({ length: 7 }, (_, i) =>
+            `<span class="hm-cell ${isSessionDone(w.id, i + 1) ? 'done' : ''}"></span>`
+          ).join('')}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function showSettings() {
+  const m = document.getElementById('settings-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function hideSettings() {
+  const m = document.getElementById('settings-modal');
+  if (m) m.style.display = 'none';
 }
 
 function renderParasiteChart() {
@@ -1583,7 +1675,7 @@ function renderPushSection() {
   if (!pushSupported()) return '';
   const enabled = state.pushEnabled && (typeof Notification !== 'undefined' && Notification.permission === 'granted');
   return `
-    <div class="section-title">${t('notifyTitle')}</div>
+    <div class="settings-section-title">${t('notifyTitle')}</div>
     <div class="gist-sync-card">
       ${enabled
         ? `<div class="gist-connected">${t('notifyEnabled')}</div>`

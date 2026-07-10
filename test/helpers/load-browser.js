@@ -129,7 +129,8 @@ function load(options = {}) {
     'totalCompleted', 'plural', 't', 'tf', 'curLang', 'getUI', 'getWeek', 'getReadingTexts',
     'setLang', 'urlBase64ToUint8Array', 'pushSupported', 'enablePush', 'savePushSubscription',
     'renderPushSection', 'renderReminderBanner', 'saveState', 'loadState', 'todayStr',
-    'startTraining', 'markPhaseDone', 'renderHome',
+    'startTraining', 'markPhaseDone', 'renderHome', 'renderProgress',
+    'renderOnboarding', 'dismissOnboarding', 'renderHeatmap',
     // recorder
     'recPickMime', 'recSelectPrunable', 'recSupported', 'renderRecorderSection',
   ];
