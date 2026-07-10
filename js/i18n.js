@@ -100,6 +100,15 @@ const UI = {
     notifyNeedGist: 'Сначала подключи GitHub (ниже) — туда сохраняется подписка',
     notifyNeedInstall: 'Сначала добавь приложение на экран «Домой» (иначе iOS не даёт уведомления)',
     notifyUnsupported: 'Этот браузер не поддерживает пуш-уведомления',
+    recTitle: '🎙️ Запись голоса',
+    recHint: 'Записи хранятся только на этом устройстве',
+    recStart: '● Записать',
+    recStop: '■ Стоп',
+    recDenied: '❌ Нет доступа к микрофону. Разреши в настройках Safari.',
+    recUnsupported: 'Браузер не поддерживает запись',
+    recEmpty: 'Записей за этот день пока нет',
+    recBefore: '📼 Твоя запись «до» — неделя 1',
+    recDeleteConfirm: 'Удалить запись?',
   },
 
   uk: {
@@ -190,6 +199,15 @@ const UI = {
     notifyNeedGist: 'Спочатку підключи GitHub (нижче) — туди зберігається підписка',
     notifyNeedInstall: 'Спочатку додай застосунок на екран «Домівка» (інакше iOS не дає сповіщень)',
     notifyUnsupported: 'Цей браузер не підтримує пуш-сповіщення',
+    recTitle: '🎙️ Запис голосу',
+    recHint: 'Записи зберігаються лише на цьому пристрої',
+    recStart: '● Записати',
+    recStop: '■ Стоп',
+    recDenied: '❌ Немає доступу до мікрофона. Дозволь у налаштуваннях Safari.',
+    recUnsupported: 'Браузер не підтримує запис',
+    recEmpty: 'Записів за цей день поки немає',
+    recBefore: '📼 Твій запис «до» — тиждень 1',
+    recDeleteConfirm: 'Видалити запис?',
   },
 
   en: {
@@ -280,6 +298,15 @@ const UI = {
     notifyNeedGist: 'Connect GitHub first (below) — the subscription is stored there',
     notifyNeedInstall: 'Add the app to your Home Screen first (otherwise iOS blocks notifications)',
     notifyUnsupported: 'This browser does not support push notifications',
+    recTitle: '🎙️ Voice recording',
+    recHint: 'Recordings are stored only on this device',
+    recStart: '● Record',
+    recStop: '■ Stop',
+    recDenied: '❌ No microphone access. Allow it in Safari settings.',
+    recUnsupported: 'This browser does not support recording',
+    recEmpty: 'No recordings for this day yet',
+    recBefore: '📼 Your "before" recording — week 1',
+    recDeleteConfirm: 'Delete this recording?',
   },
 };
 
