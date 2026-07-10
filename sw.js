@@ -1,12 +1,14 @@
 'use strict';
 
 // При каждом деплое меняем версию — старый кэш удаляется в activate.
-const CACHE = 'speech-v4';
+const CACHE = 'speech-v5';
 const ASSETS = [
   './',
   './index.html',
   './css/app.css',
   './js/data.js',
+  './js/i18n.js',
+  './js/recorder.js',
   './js/app.js',
   './manifest.json',
   './icons/icon.svg',

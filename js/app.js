@@ -338,6 +338,7 @@ function navigate(view, params) {
   stopTimer();
   stopBreathing();
   stopMetronome();
+  if (typeof stopRecording === 'function') stopRecording();
   currentView = view;
   if (params) trainingState = params;
   render();
@@ -591,6 +592,8 @@ function renderPhase() {
       <div class="phase-content-card">
         <div class="phase-content-text">${formatContent(phase.content)}</div>
 
+        ${phase.id === 'speech' && typeof renderRecorderSection === 'function'
+          ? renderRecorderSection(weekNum, dayNum, !!phase.isFinal) : ''}
         ${phase.readingText ? renderPhaseReading(weekNum, dayNum) : ''}
         ${phase.twisters ? renderTwisters(phase.twisters) : ''}
         ${phase.warmupList ? renderWarmupList(phase.warmupList) : ''}
@@ -608,6 +611,9 @@ function renderPhase() {
   `;
 
   updateTimerUI(phase.seconds, phase.seconds);
+  if (phase.id === 'speech' && typeof initRecorderSection === 'function') {
+    initRecorderSection(weekNum, dayNum, !!phase.isFinal);
+  }
 }
 
 function runPhaseTimer() {

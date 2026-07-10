@@ -59,6 +59,9 @@ function load(options = {}) {
     standalone: opts.standalone,
     vibrate() {},
   };
+  if (opts.mic) {
+    navigator.mediaDevices = { getUserMedia: async () => ({ getTracks: () => [] }) };
+  }
   if (opts.push) {
     navigator.serviceWorker = {
       ready: Promise.resolve({
@@ -91,7 +94,14 @@ function load(options = {}) {
     fetch: opts.fetch || (async () => ({ ok: true, status: 200, json: async () => ({}) })),
     confirm: () => true,
     alert: () => {},
+    URL: { createObjectURL: () => 'blob:test', revokeObjectURL: () => {} },
   };
+  if (opts.mic) {
+    const MR = function () { this.state = 'inactive'; };
+    MR.isTypeSupported = (m) => m === 'audio/mp4';
+    sandbox.MediaRecorder = MR;
+    sandbox.indexedDB = { open: () => ({}) };
+  }
 
   const windowObj = {
     navigator,
@@ -119,11 +129,15 @@ function load(options = {}) {
     'totalCompleted', 'plural', 't', 'tf', 'curLang', 'getUI', 'getWeek', 'getReadingTexts',
     'setLang', 'urlBase64ToUint8Array', 'pushSupported', 'enablePush', 'savePushSubscription',
     'renderPushSection', 'renderReminderBanner', 'saveState', 'loadState', 'todayStr',
+    'startTraining', 'markPhaseDone', 'renderHome',
+    // recorder
+    'recPickMime', 'recSelectPrunable', 'recSupported', 'renderRecorderSection',
   ];
 
   const src = [
     fs.readFileSync(path.join(ROOT, 'js', 'data.js'), 'utf8'),
     fs.readFileSync(path.join(ROOT, 'js', 'i18n.js'), 'utf8'),
+    fs.readFileSync(path.join(ROOT, 'js', 'recorder.js'), 'utf8'),
     fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8'),
     '\n;globalThis.__exports = {};',
     ...EXPORT_NAMES.map((n) => `try { globalThis.__exports.${n} = ${n}; } catch (e) {}`),
