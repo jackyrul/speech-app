@@ -1,7 +1,7 @@
 'use strict';
 
 // При каждом деплое меняем версию — старый кэш удаляется в activate.
-const CACHE = 'speech-v9';
+const CACHE = 'speech-v10';
 const ASSETS = [
   './',
   './index.html',
