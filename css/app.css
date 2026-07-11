@@ -945,11 +945,18 @@ p + p { margin-top: 8px; }
   position: fixed; inset: 0; background: rgba(0,0,0,0.55);
   display: flex; align-items: flex-end; justify-content: center;
   z-index: 200; padding: 16px;
+  overscroll-behavior: contain;
 }
 .gist-modal-inner {
   background: var(--card); border-radius: 20px 20px 16px 16px;
   padding: 24px 20px 32px; width: 100%; max-width: 480px;
   display: flex; flex-direction: column; gap: 12px;
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
 }
 .gist-modal-title { font-size: 18px; font-weight: 800; }
 .gist-steps { display: flex; flex-direction: column; gap: 8px; }
@@ -1250,7 +1257,6 @@ p + p { margin-top: 8px; }
 }
 .settings-gear:active { background: var(--hover-bg); }
 .settings-modal { z-index: 80; }
-.settings-inner { max-height: 85vh; overflow-y: auto; }
 .settings-section-title {
   font-size: 12px;
   font-weight: 700;
