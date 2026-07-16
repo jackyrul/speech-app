@@ -125,6 +125,10 @@ const UI = {
     settingsTitle: '⚙️ Настройки',
     heatmapTitle: '📆 Карта тренировок',
     close: 'Закрыть',
+    humSound: 'Мммм',
+    humPatternLabel: '«Мммм» {hum} сек · вдох {inhale} сек',
+    cycleLabel: 'Цикл {a} / {b}',
+    lockedPreview: '🔒 Предпросмотр: неделя откроется после прохождения предыдущих',
   },
 
   uk: {
@@ -240,6 +244,10 @@ const UI = {
     settingsTitle: '⚙️ Налаштування',
     heatmapTitle: '📆 Карта тренувань',
     close: 'Закрити',
+    humSound: 'Мммм',
+    humPatternLabel: '«Мммм» {hum} сек · вдих {inhale} сек',
+    cycleLabel: 'Цикл {a} / {b}',
+    lockedPreview: '🔒 Попередній перегляд: тиждень відкриється після проходження попередніх',
   },
 
   en: {
@@ -355,6 +363,10 @@ const UI = {
     settingsTitle: '⚙️ Settings',
     heatmapTitle: '📆 Training map',
     close: 'Close',
+    humSound: 'Mmmm',
+    humPatternLabel: '"Mmmm" {hum} sec · inhale {inhale} sec',
+    cycleLabel: 'Cycle {a} / {b}',
+    lockedPreview: '🔒 Preview: this week unlocks after completing the previous ones',
   },
 };
 
@@ -470,45 +482,85 @@ const READING_I18N = {
   uk: [
     {
       id: 'shevchenko-zapovit', title: 'Заповіт', author: 'Тарас Шевченко', source: '«Заповіт» (1845)', level: 'Дикція',
-      text: 'Як умру, то поховайте\nМене на могилі,\nСеред степу широкого,\nНа Вкраїні милій,\nЩоб лани широкополі,\nІ Дніпро, і кручі\nБуло видно, було чути,\nЯк реве ревучий.',
+      text: 'Як умру, то поховайте\nМене на могилі,\nСеред степу широкого,\nНа Вкраїні милій,\nЩоб лани широкополі,\nІ Дніпро, і кручі\nБуло видно, було чути,\nЯк реве ревучий.\n\nЯк понесе з України\nУ синєє море\nКров ворожу… отойді я\nІ лани і гори —\nВсе покину і полину\nДо самого Бога\nМолитися… а до того\nЯ не знаю Бога.\n\nПоховайте та вставайте,\nКайдани порвіте\nІ вражою злою кров’ю\nВолю окропіте.\nІ мене в сім’ї великій,\nВ сім’ї вольній, новій,\nНе забудьте пом’янути\nНезлим тихим словом.',
     },
     {
       id: 'shevchenko-reve', title: 'Реве та стогне Дніпр широкий', author: 'Тарас Шевченко', source: 'з поеми «Причинна» (1837)', level: 'Голос',
-      text: 'Реве та стогне Дніпр широкий,\nСердитий вітер завива,\nДодолу верби гне високі,\nГорами хвилю підійма.\n\nІ блідий місяць на ту пору\nІз хмари де-де виглядав,\nНеначе човен в синім морі\nТо виринав, то потопав.',
+      text: 'Реве та стогне Дніпр широкий,\nСердитий вітер завива,\nДодолу верби гне високі,\nГорами хвилю підійма.\n\nІ блідий місяць на ту пору\nІз хмари де-де виглядав,\nНеначе човен в синім морі\nТо виринав, то потопав.\n\nЩе треті півні не співали,\nНіхто ніде не гомонів,\nСичі в гаю перекликались,\nТа ясен раз у раз скрипів.',
     },
     {
       id: 'lesya-contra', title: 'Contra spem spero!', author: 'Леся Українка', source: '«Contra spem spero!» (1890)', level: 'Впевненість',
-      text: 'Гетьте, думи, ви хмари осінні!\nТо ж тепера весна золота!\nЧи то так у жалю, в голосінні\nПроминуть молодії літа?\n\nНі, я хочу крізь сльози сміятись,\nСеред лиха співати пісні,\nБез надії таки сподіватись,\nЖити хочу! Геть, думи сумні!',
+      text: 'Гетьте, думи, ви хмари осінні!\nТо ж тепера весна золота!\nЧи то так у жалю, в голосінні\nПроминуть молодії літа?\n\nНі, я хочу крізь сльози сміятись,\nСеред лиха співати пісні,\nБез надії таки сподіватись,\nЖити хочу! Геть, думи сумні!\n\nЯ на вбогім сумнім перелозі\nБуду сіять барвисті квітки,\nБуду сіять квітки на морозі,\nБуду лить на них сльози гіркі.\n\nІ від сліз тих гарячих розтане\nТа кора льодовая, міцна,\nМоже, квіти зійдуть — і настане\nЩе й для мене весела весна.\n\nТак! я буду крізь сльози сміятись,\nСеред лиха співати пісні,\nБез надії таки сподіватись,\nБуду жити! Геть, думи сумні!',
     },
     {
       id: 'franko-hymn', title: 'Гімн (Вічний революціонер)', author: 'Іван Франко', source: '«Гімн» (1880)', level: 'Переконливість',
-      text: 'Вічний революціонер —\nДух, що тіло рве до бою,\nРве за поступ, щастя й волю, —\nВін живе, він ще не вмер.\n\nНі попівськії тортури,\nНі тюремні царські мури,\nАні війська муштровані,\nНі гармати лаштовані…',
+      text: 'Вічний революціонер —\nДух, що тіло рве до бою,\nРве за поступ, щастя й волю, —\nВін живе, він ще не вмер.\nНі попівськії тортури,\nНі тюремні царські мури,\nАні війська муштровані,\nНі гармати лаштовані,\nНі шпіонське ремесло\nВ гріб його ще не звело.\n\nВін не вмер, він ще живе!\nХоч від тисяч літ родився,\nТа аж вчора розповився\nІ о власній силі йде.\nІ простується, міцніє,\nІ спішить туди, де дніє;\nСловом сильним, мов трубою,\nМіліони зве з собою, —\nМіліони радо йдуть,\nБо се голос духа чуть.',
     },
     {
       id: 'shevchenko-sadok', title: 'Садок вишневий коло хати', author: 'Тарас Шевченко', source: '«Садок вишневий коло хати» (1847)', level: 'Темп і паузи',
-      text: 'Садок вишневий коло хати,\nХрущі над вишнями гудуть,\nПлугатарі з плугами йдуть,\nСпівають ідучи дівчата,\nА матері вечерять ждуть.\n\nСім’я вечеря коло хати,\nВечірня зіронька встає.',
+      text: 'Садок вишневий коло хати,\nХрущі над вишнями гудуть,\nПлугатарі з плугами йдуть,\nСпівають ідучи дівчата,\nА матері вечерять ждуть.\n\nСім’я вечеря коло хати,\nВечірня зіронька встає.\nДочка вечерять подає,\nА мати хоче научати,\nТак соловейко не дає.\n\nПоклала мати коло хати\nМаленьких діточок своїх;\nСама заснула коло їх.\nЗатихло все, тілько дівчата\nТа соловейко не затих.',
+    },
+    {
+      id: 'shevchenko-meni-odnakovo', title: 'Мені однаково', author: 'Тарас Шевченко', source: '«Мені однаково, чи буду…» (1847)', level: 'Інтонація',
+      text: 'Мені однаково, чи буду\nЯ жить в Україні, чи ні.\nЧи хто згадає, чи забуде\nМене в снігу на чужині —\nОднаковісінько мені.\nВ неволі виріс між чужими,\nІ, не оплаканий своїми,\nВ неволі, плачучи, умру,\nІ все з собою заберу,\nМалого сліду не покину\nНа нашій славній Україні,\nНа нашій — не своїй землі.',
+    },
+    {
+      id: 'shevchenko-teche-voda', title: 'Тече вода з-під явора', author: 'Тарас Шевченко', source: '«Тече вода з-під явора» (1860)', level: 'Темп і паузи',
+      text: 'Тече вода з-під явора\nЯром на долину.\nПишається над водою\nЧервона калина.\nПишається калинонька,\nЯвор молодіє,\nА кругом їх верболози\nЙ лози зеленіють.\n\nТече вода із-за гаю\nТа попід горою.\nХлюпощуться качаточка\nПоміж осокою.\nА качечка випливає\nЗ качуром за ними,\nЛовить ряску, розмовляє\nЗ дітками своїми.',
+    },
+    {
+      id: 'franko-chogo', title: 'Чого являєшся мені у сні?', author: 'Іван Франко', source: '«Зів’яле листя» (1896)', level: 'Голос',
+      text: 'Чого являєшся мені\nУ сні?\nЧого звертаєш ти до мене\nЧудові очі ті ясні,\nСумні,\nНемов криниці дно студене?\nЧому уста твої німі?\nЯкий докір, яке страждання,\nЯке несповнене бажання\nНа них, мов зарево червоне,\nЗаняалось і горить тремтяче?',
+    },
+    {
+      id: 'lesya-vesna', title: 'Стояла я і слухала весну', author: 'Леся Українка', source: '«Стояла я і слухала весну…» (1895)', level: 'Інтонація',
+      text: 'Стояла я і слухала весну,\nВесна мені багато говорила,\nСпівала пісню дзвінку, голосну\nТо знов таємно-тихо шепотіла.\n\nВона мені співала про любов,\nПро молодощі, радощі, надії,\nВона мені переспівала знов\nТе, що давно мені співали мрії.',
+    },
+    {
+      id: 'oles-chary', title: 'Чари ночі', author: 'Олександр Олесь', source: '«Чари ночі» (1904)', level: 'Впевненість',
+      text: 'Сміються, плачуть солов’ї\nІ б’ють піснями в груди:\n«Цілуй, цілуй, цілуй її, —\nЗнов молодість не буде!\n\nТи не дивись, що буде там,\nЧи забуття, чи зрада:\nВесна іде назустріч вам,\nВесна в сей час вам рада.\n\nНа мент єдиний залиши\nСвій сум, думки і горе —\nІ струмінь власної душі\nУлий в шумляче море».',
     },
   ],
   en: [
     {
       id: 'shakespeare-18', title: 'Sonnet 18', author: 'William Shakespeare', source: 'Sonnet 18 (1609)', level: 'Intonation',
-      text: 'Shall I compare thee to a summer\'s day?\nThou art more lovely and more temperate:\nRough winds do shake the darling buds of May,\nAnd summer\'s lease hath all too short a date;\nSometime too hot the eye of heaven shines,\nAnd often is his gold complexion dimm\'d.',
+      text: 'Shall I compare thee to a summer\'s day?\nThou art more lovely and more temperate:\nRough winds do shake the darling buds of May,\nAnd summer\'s lease hath all too short a date;\nSometime too hot the eye of heaven shines,\nAnd often is his gold complexion dimm\'d;\nAnd every fair from fair sometime declines,\nBy chance or nature\'s changing course untrimm\'d;\nBut thy eternal summer shall not fade,\nNor lose possession of that fair thou ow\'st;\nNor shall death brag thou wander\'st in his shade,\nWhen in eternal lines to time thou grow\'st:\nSo long as men can breathe or eyes can see,\nSo long lives this, and this gives life to thee.',
     },
     {
       id: 'wordsworth-daffodils', title: 'Daffodils', author: 'William Wordsworth', source: '"I Wandered Lonely as a Cloud" (1807)', level: 'Voice',
-      text: 'I wandered lonely as a cloud\nThat floats on high o\'er vales and hills,\nWhen all at once I saw a crowd,\nA host, of golden daffodils;\nBeside the lake, beneath the trees,\nFluttering and dancing in the breeze.',
+      text: 'I wandered lonely as a cloud\nThat floats on high o\'er vales and hills,\nWhen all at once I saw a crowd,\nA host, of golden daffodils;\nBeside the lake, beneath the trees,\nFluttering and dancing in the breeze.\n\nContinuous as the stars that shine\nAnd twinkle on the milky way,\nThey stretched in never-ending line\nAlong the margin of a bay:\nTen thousand saw I at a glance,\nTossing their heads in sprightly dance.\n\nFor oft, when on my couch I lie\nIn vacant or in pensive mood,\nThey flash upon that inward eye\nWhich is the bliss of solitude;\nAnd then my heart with pleasure fills,\nAnd dances with the daffodils.',
     },
     {
       id: 'blake-tyger', title: 'The Tyger', author: 'William Blake', source: '"The Tyger" (1794)', level: 'Diction',
-      text: 'Tyger Tyger, burning bright,\nIn the forests of the night;\nWhat immortal hand or eye,\nCould frame thy fearful symmetry?\n\nIn what distant deeps or skies,\nBurnt the fire of thine eyes?',
+      text: 'Tyger Tyger, burning bright,\nIn the forests of the night;\nWhat immortal hand or eye,\nCould frame thy fearful symmetry?\n\nIn what distant deeps or skies,\nBurnt the fire of thine eyes?\nOn what wings dare he aspire?\nWhat the hand, dare seize the fire?\n\nAnd what shoulder, & what art,\nCould twist the sinews of thy heart?\nAnd when thy heart began to beat,\nWhat dread hand? & what dread feet?\n\nWhen the stars threw down their spears\nAnd water\'d heaven with their tears:\nDid he smile his work to see?\nDid he who made the Lamb make thee?\n\nTyger Tyger burning bright,\nIn the forests of the night:\nWhat immortal hand or eye,\nDare frame thy fearful symmetry?',
     },
     {
       id: 'byron-beauty', title: 'She Walks in Beauty', author: 'Lord Byron', source: '"She Walks in Beauty" (1815)', level: 'Tempo and pauses',
-      text: 'She walks in beauty, like the night\nOf cloudless climes and starry skies;\nAnd all that\'s best of dark and bright\nMeet in her aspect and her eyes;\nThus mellow\'d to that tender light\nWhich heaven to gaudy day denies.',
+      text: 'She walks in beauty, like the night\nOf cloudless climes and starry skies;\nAnd all that\'s best of dark and bright\nMeet in her aspect and her eyes;\nThus mellow\'d to that tender light\nWhich heaven to gaudy day denies.\n\nOne shade the more, one ray the less,\nHad half impair\'d the nameless grace\nWhich waves in every raven tress,\nOr softly lightens o\'er her face;\nWhere thoughts serenely sweet express,\nHow pure, how dear their dwelling-place.\n\nAnd on that cheek, and o\'er that brow,\nSo soft, so calm, yet eloquent,\nThe smiles that win, the tints that glow,\nBut tell of days in goodness spent,\nA mind at peace with all below,\nA heart whose love is innocent!',
     },
     {
       id: 'poe-dream', title: 'A Dream Within a Dream', author: 'Edgar Allan Poe', source: '"A Dream Within a Dream" (1849)', level: 'Confidence',
-      text: 'Take this kiss upon the brow!\nAnd, in parting from you now,\nThus much let me avow —\nYou are not wrong, who deem\nThat my days have been a dream;\nYet if hope has flown away\nIn a night, or in a day.',
+      text: 'Take this kiss upon the brow!\nAnd, in parting from you now,\nThus much let me avow —\nYou are not wrong, who deem\nThat my days have been a dream;\nYet if hope has flown away\nIn a night, or in a day,\nIn a vision, or in none,\nIs it therefore the less gone?\nAll that we see or seem\nIs but a dream within a dream.\n\nI stand amid the roar\nOf a surf-tormented shore,\nAnd I hold within my hand\nGrains of the golden sand —\nHow few! yet how they creep\nThrough my fingers to the deep,\nWhile I weep — while I weep!\nO God! can I not grasp\nThem with a tighter clasp?\nO God! can I not save\nOne from the pitiless wave?\nIs all that we see or seem\nBut a dream within a dream?',
+    },
+    {
+      id: 'frost-road', title: 'The Road Not Taken', author: 'Robert Frost', source: '"The Road Not Taken" (1916)', level: 'Tempo and pauses',
+      text: 'Two roads diverged in a yellow wood,\nAnd sorry I could not travel both\nAnd be one traveler, long I stood\nAnd looked down one as far as I could\nTo where it bent in the undergrowth;\n\nThen took the other, as just as fair,\nAnd having perhaps the better claim,\nBecause it was grassy and wanted wear;\nThough as for that the passing there\nHad worn them really about the same,\n\nAnd both that morning equally lay\nIn leaves no step had trodden black.\nOh, I kept the first for another day!\nYet knowing how way leads on to way,\nI doubted if I should ever come back.\n\nI shall be telling this with a sigh\nSomewhere ages and ages hence:\nTwo roads diverged in a wood, and I —\nI took the one less traveled by,\nAnd that has made all the difference.',
+    },
+    {
+      id: 'henley-invictus', title: 'Invictus', author: 'William Ernest Henley', source: '"Invictus" (1888)', level: 'Confidence',
+      text: 'Out of the night that covers me,\nBlack as the pit from pole to pole,\nI thank whatever gods may be\nFor my unconquerable soul.\n\nIn the fell clutch of circumstance\nI have not winced nor cried aloud.\nUnder the bludgeonings of chance\nMy head is bloody, but unbowed.\n\nBeyond this place of wrath and tears\nLooms but the Horror of the shade,\nAnd yet the menace of the years\nFinds and shall find me unafraid.\n\nIt matters not how strait the gate,\nHow charged with punishments the scroll,\nI am the master of my fate,\nI am the captain of my soul.',
+    },
+    {
+      id: 'kipling-if', title: 'If—', author: 'Rudyard Kipling', source: '"If—" (1910)', level: 'Persuasion',
+      text: 'If you can keep your head when all about you\nAre losing theirs and blaming it on you,\nIf you can trust yourself when all men doubt you,\nBut make allowance for their doubting too;\nIf you can wait and not be tired by waiting,\nOr being lied about, don\'t deal in lies,\nOr being hated, don\'t give way to hating,\nAnd yet don\'t look too good, nor talk too wise:\n\nIf you can dream — and not make dreams your master;\nIf you can think — and not make thoughts your aim;\nIf you can meet with Triumph and Disaster\nAnd treat those two impostors just the same;\nIf you can fill the unforgiving minute\nWith sixty seconds\' worth of distance run,\nYours is the Earth and everything that\'s in it,\nAnd — which is more — you\'ll be a Man, my son!',
+    },
+    {
+      id: 'shelley-ozymandias', title: 'Ozymandias', author: 'Percy Bysshe Shelley', source: '"Ozymandias" (1818)', level: 'Diction',
+      text: 'I met a traveller from an antique land,\nWho said — "Two vast and trunkless legs of stone\nStand in the desert. . . . Near them, on the sand,\nHalf sunk a shattered visage lies, whose frown,\nAnd wrinkled lip, and sneer of cold command,\nTell that its sculptor well those passions read\nWhich yet survive, stamped on these lifeless things,\nThe hand that mocked them, and the heart that fed;\nAnd on the pedestal, these words appear:\nMy name is Ozymandias, King of Kings;\nLook on my Works, ye Mighty, and despair!\nNothing beside remains. Round the decay\nOf that colossal Wreck, boundless and bare\nThe lone and level sands stretch far away."',
+    },
+    {
+      id: 'dickinson-hope', title: '"Hope" is the thing with feathers', author: 'Emily Dickinson', source: 'Poem 254 (c. 1861)', level: 'Voice',
+      text: '"Hope" is the thing with feathers —\nThat perches in the soul —\nAnd sings the tune without the words —\nAnd never stops — at all —\n\nAnd sweetest — in the Gale — is heard —\nAnd sore must be the storm —\nThat could abash the little Bird\nThat kept so many warm —\n\nI\'ve heard it in the chillest land —\nAnd on the strangest Sea —\nYet — never — in Extremity,\nIt asked a crumb — of me.',
     },
   ],
 };
