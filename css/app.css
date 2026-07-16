@@ -1254,7 +1254,7 @@ p + p { margin-top: 8px; }
   border-radius: 10px;
 }
 .settings-gear:active { background: var(--hover-bg); }
-.settings-modal { z-index: 80; }
+/* Оба модала (200) выше нижней навигации (100); gist-модал позже в DOM — поверх настроек */
 .settings-section-title {
   font-size: 12px;
   font-weight: 700;
@@ -1303,6 +1303,18 @@ p + p { margin-top: 8px; }
 .hm-cell.done {
   background: linear-gradient(135deg, #4F46E5, #7C3AED);
   border-color: transparent;
+}
+
+/* ─── ПРЕДПРОСМОТР ЗАКРЫТОЙ НЕДЕЛИ ─── */
+.locked-banner {
+  margin: 4px 16px 12px;
+  padding: 12px 14px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-chip);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--warn-text);
 }
 
 /* ─── КОНФЕТТИ ─── */

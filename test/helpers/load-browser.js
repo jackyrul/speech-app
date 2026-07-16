@@ -46,6 +46,7 @@ function load(options = {}) {
 
   const sharedEl = elStub();
   const document = {
+    body: elStub(),
     getElementById: () => sharedEl,
     querySelector: () => sharedEl,
     querySelectorAll: () => [],
@@ -131,6 +132,7 @@ function load(options = {}) {
     'renderPushSection', 'renderReminderBanner', 'saveState', 'loadState', 'todayStr',
     'startTraining', 'markPhaseDone', 'renderHome', 'renderProgress',
     'renderOnboarding', 'dismissOnboarding', 'renderHeatmap',
+    'renderHumGuide', 'showWeekDetail', 'showSettings', 'hideSettings',
     // recorder
     'recPickMime', 'recSelectPrunable', 'recSupported', 'renderRecorderSection',
   ];

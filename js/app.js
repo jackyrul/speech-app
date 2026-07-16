@@ -303,27 +303,27 @@ function startBreathing(pattern, container) {
       circle.dataset.phase = 'done';
       if (label) label.textContent = t('bDone');
       if (count) count.textContent = '✓';
-      if (counter) counter.textContent = `Цикл ${maxCycles} / ${maxCycles}`;
+      if (counter) counter.textContent = tf('cycleLabel', { a: maxCycles, b: maxCycles });
       stopBreathing();
       return;
     }
 
     const cycleIdx = Math.floor(elapsed / cycleLen);
-    const t = elapsed - cycleIdx * cycleLen;    // секунда внутри цикла
+    const tIn = elapsed - cycleIdx * cycleLen;    // секунда внутри цикла
     let phase, scale, remain;
 
-    if (t < inhale) {
+    if (tIn < inhale) {
       phase = 'inhale';
-      scale = 0.6 + 0.4 * (t / inhale);
-      remain = Math.ceil(inhale - t);
-    } else if (t < inhale + hold) {
+      scale = 0.6 + 0.4 * (tIn / inhale);
+      remain = Math.ceil(inhale - tIn);
+    } else if (tIn < inhale + hold) {
       phase = 'hold';
       scale = 1;
-      remain = Math.ceil(inhale + hold - t);
+      remain = Math.ceil(inhale + hold - tIn);
     } else {
       phase = 'exhale';
-      scale = 1 - 0.4 * ((t - inhale - hold) / exhale);
-      remain = Math.ceil(cycleLen - t);
+      scale = 1 - 0.4 * ((tIn - inhale - hold) / exhale);
+      remain = Math.ceil(cycleLen - tIn);
     }
 
     circle.style.transform = `scale(${scale.toFixed(3)})`;
@@ -336,7 +336,7 @@ function startBreathing(pattern, container) {
       if (navigator.vibrate) { try { navigator.vibrate(20); } catch (e) {} }
       lastPhase = phase;
     }
-    if (counter) counter.textContent = `Цикл ${cycleIdx + 1} / ${maxCycles}`;
+    if (counter) counter.textContent = tf('cycleLabel', { a: cycleIdx + 1, b: maxCycles });
 
     breathingRAF = requestAnimationFrame(frame);
   }
@@ -346,6 +346,88 @@ function startBreathing(pattern, container) {
 
 function stopBreathing() {
   if (breathingRAF) { cancelAnimationFrame(breathingRAF); breathingRAF = null; }
+}
+
+// ─── Гид «М»: 10 сек звук «Мммм» → 5 сек вдох, по циклам ───
+// Тот же круг, что и у дыхания: «Мммм» — плавно сдувается, вдох — растёт.
+function startHum(pattern, container) {
+  stopBreathing();
+  const hum = pattern.hum;
+  const inhale = pattern.inhale;
+  const cycleLen = hum + inhale;
+  const maxCycles = pattern.cycles || 3;
+  const totalSec = cycleLen * maxCycles;
+
+  const circle = container.querySelector('.breath-circle');
+  const label = container.querySelector('.breath-label');
+  const count = container.querySelector('.breath-count');
+  const counter = container.querySelector('.breath-counter');
+  if (!circle) return;
+
+  const start = Date.now();
+  let lastPhase = null;
+
+  function frame() {
+    const elapsed = (Date.now() - start) / 1000;
+
+    if (elapsed >= totalSec) {
+      circle.style.transform = 'scale(0.6)';
+      circle.style.opacity = '0.6';
+      circle.dataset.phase = 'done';
+      if (label) label.textContent = t('bDone');
+      if (count) count.textContent = '✓';
+      if (counter) counter.textContent = tf('cycleLabel', { a: maxCycles, b: maxCycles });
+      stopBreathing();
+      return;
+    }
+
+    const cycleIdx = Math.floor(elapsed / cycleLen);
+    const tIn = elapsed - cycleIdx * cycleLen;
+    let phase, scale, remain;
+
+    if (tIn < hum) {
+      phase = 'exhale'; // звук «М» на выдохе — круг медленно сдувается
+      scale = 1 - 0.4 * (tIn / hum);
+      remain = Math.ceil(hum - tIn);
+    } else {
+      phase = 'inhale';
+      scale = 0.6 + 0.4 * ((tIn - hum) / inhale);
+      remain = Math.ceil(cycleLen - tIn);
+    }
+
+    circle.style.transform = `scale(${scale.toFixed(3)})`;
+    circle.style.opacity = (0.55 + 0.45 * ((scale - 0.6) / 0.4)).toFixed(3);
+    if (count) count.textContent = Math.max(1, remain);
+
+    if (phase !== lastPhase) {
+      circle.dataset.phase = phase;
+      if (label) label.textContent = phase === 'exhale' ? t('humSound') : t('bInhale');
+      if (navigator.vibrate) { try { navigator.vibrate(20); } catch (e) {} }
+      lastPhase = phase;
+    }
+    if (counter) counter.textContent = tf('cycleLabel', { a: cycleIdx + 1, b: maxCycles });
+
+    breathingRAF = requestAnimationFrame(frame);
+  }
+
+  frame();
+}
+
+function renderHumGuide(pattern) {
+  return `
+    <div class="breathing-guide hum-guide">
+      <div class="breath-circle-wrap">
+        <div class="breath-circle" data-phase="exhale">
+          <span class="breath-count">${pattern.hum}</span>
+        </div>
+        <div class="breath-label">${t('humSound')}</div>
+      </div>
+      <div class="breath-info">
+        <div class="breath-pattern">${tf('humPatternLabel', { hum: pattern.hum, inhale: pattern.inhale })}</div>
+        <div class="breath-counter">${tf('cycleLabel', { a: 0, b: pattern.cycles || 3 })}</div>
+      </div>
+    </div>
+  `;
 }
 
 // ═══════════════════════════════════════════════
@@ -361,6 +443,7 @@ function navigate(view, params) {
   stopBreathing();
   stopMetronome();
   if (typeof stopRecording === 'function') stopRecording();
+  unlockBodyScroll(true); // навигация всегда снимает блокировку скролла
   currentView = view;
   if (params) trainingState = params;
   render();
@@ -664,6 +747,7 @@ function renderPhase() {
       </div>
 
       ${phase.breathingPattern ? renderBreathingGuide(phase.breathingPattern) : ''}
+      ${phase.humPattern ? renderHumGuide(phase.humPattern) : ''}
 
       <div class="phase-content-card">
         <div class="phase-content-text">${formatContent(phase.content)}</div>
@@ -702,6 +786,9 @@ function runPhaseTimer() {
   if (phase.breathingPattern) {
     const container = document.querySelector('.breathing-guide');
     if (container) startBreathing(phase.breathingPattern, container);
+  } else if (phase.humPattern) {
+    const container = document.querySelector('.hum-guide');
+    if (container) startHum(phase.humPattern, container);
   }
 
   startTimer(phase.seconds, updateTimerUI, () => {
@@ -750,11 +837,11 @@ function renderBreathingGuide(pattern) {
         <div class="breath-circle" data-phase="inhale">
           <span class="breath-count">${inhale}</span>
         </div>
-        <div class="breath-label">Вдох</div>
+        <div class="breath-label">${t('bInhale')}</div>
       </div>
       <div class="breath-info">
-        <div class="breath-pattern">Вдох ${inhale}${holdLabel} · выдох ${exhale}</div>
-        <div class="breath-counter">Цикл 0 / ${pattern.cycles || 5}</div>
+        <div class="breath-pattern">${t('bInhale')} ${inhale}${holdLabel} · ${t('bExhale').toLowerCase()} ${exhale}</div>
+        <div class="breath-counter">${tf('cycleLabel', { a: 0, b: pattern.cycles || 5 })}</div>
       </div>
     </div>
   `;
@@ -1129,7 +1216,7 @@ function renderProgram() {
           const isLocked = week.id > state.currentWeek;
           return `
             <div class="week-card ${isCurrent ? 'current' : ''} ${isLocked ? 'locked' : ''}"
-              onclick="${isLocked ? '' : `showWeekDetail(${week.id})`}">
+              onclick="showWeekDetail(${week.id})">
               <div class="week-card-header">
                 <div class="week-icon">${week.icon}</div>
                 <div class="week-info">
@@ -1176,6 +1263,7 @@ function renderProgram() {
 
 function showWeekDetail(weekNum) {
   const week = getWeek(weekNum);
+  const isLocked = weekNum > state.currentWeek;
   appEl.innerHTML = `
     <div class="view week-detail-view">
       <div class="training-header">
@@ -1183,6 +1271,7 @@ function showWeekDetail(weekNum) {
         <div class="training-title">${week.icon} ${t('week')} ${weekNum}</div>
         <div></div>
       </div>
+      ${isLocked ? `<div class="locked-banner">${t('lockedPreview')}</div>` : ''}
       <div class="week-detail-title">${week.title}</div>
       <div class="week-detail-goal">${week.goal}</div>
       <div class="tip-card"><div class="tip-label">💡</div><div class="tip-text">${week.tip}</div></div>
@@ -1199,21 +1288,23 @@ function showWeekDetail(weekNum) {
         </div>
       `).join('')}
 
-      <div class="section-title">${t('daysTitle')}</div>
-      <div class="days-row">
-        ${Array.from({ length: 7 }, (_, i) => {
-          const d = i + 1;
-          const isDone = isSessionDone(weekNum, d);
-          const isCurrent = d === state.currentDay && weekNum === state.currentWeek;
-          return `<button class="day-btn ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}"
-            onclick="startTraining(${weekNum}, ${d})">
-            ${isDone ? '✓' : d}
-          </button>`;
-        }).join('')}
-      </div>
-      <button class="btn-start" style="margin:16px 0 32px" onclick="startTraining(${weekNum}, ${
-        state.currentWeek === weekNum ? state.currentDay : 1
-      })">${t('trainBtn')}</button>
+      ${isLocked ? '' : `
+        <div class="section-title">${t('daysTitle')}</div>
+        <div class="days-row">
+          ${Array.from({ length: 7 }, (_, i) => {
+            const d = i + 1;
+            const isDone = isSessionDone(weekNum, d);
+            const isCurrent = d === state.currentDay && weekNum === state.currentWeek;
+            return `<button class="day-btn ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}"
+              onclick="startTraining(${weekNum}, ${d})">
+              ${isDone ? '✓' : d}
+            </button>`;
+          }).join('')}
+        </div>
+        <button class="btn-start" style="margin:16px 0 32px" onclick="startTraining(${weekNum}, ${
+          state.currentWeek === weekNum ? state.currentDay : 1
+        })">${t('trainBtn')}</button>
+      `}
     </div>
     ${renderNav('program')}
   `;
@@ -1389,14 +1480,42 @@ function renderHeatmap() {
   `;
 }
 
+// ─── Блокировка прокрутки страницы под модалом (iOS) ───
+let _modalLocks = 0;
+let _scrollLockY = 0;
+
+function lockBodyScroll() {
+  _modalLocks++;
+  if (_modalLocks > 1) return;
+  _scrollLockY = window.scrollY || 0;
+  const b = document.body;
+  b.style.position = 'fixed';
+  b.style.top = `-${_scrollLockY}px`;
+  b.style.left = '0';
+  b.style.right = '0';
+  b.style.width = '100%';
+}
+
+function unlockBodyScroll(force) {
+  _modalLocks = force ? 0 : Math.max(0, _modalLocks - 1);
+  if (_modalLocks > 0) return;
+  const b = document.body;
+  b.style.position = '';
+  b.style.top = '';
+  b.style.left = '';
+  b.style.right = '';
+  b.style.width = '';
+  window.scrollTo(0, _scrollLockY);
+}
+
 function showSettings() {
   const m = document.getElementById('settings-modal');
-  if (m) m.style.display = 'flex';
+  if (m && m.style.display !== 'flex') { m.style.display = 'flex'; lockBodyScroll(); }
 }
 
 function hideSettings() {
   const m = document.getElementById('settings-modal');
-  if (m) m.style.display = 'none';
+  if (m && m.style.display !== 'none') { m.style.display = 'none'; unlockBodyScroll(); }
 }
 
 function renderParasiteChart() {
@@ -1581,12 +1700,12 @@ function gistStatus(msg, type) {
 
 function showGistSetup() {
   const m = document.getElementById('gist-modal');
-  if (m) m.style.display = 'flex';
+  if (m && m.style.display !== 'flex') { m.style.display = 'flex'; lockBodyScroll(); }
 }
 
 function hideGistModal() {
   const m = document.getElementById('gist-modal');
-  if (m) m.style.display = 'none';
+  if (m && m.style.display !== 'none') { m.style.display = 'none'; unlockBodyScroll(); }
 }
 
 function saveGistToken() {
