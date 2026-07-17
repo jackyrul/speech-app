@@ -133,6 +133,8 @@ function load(options = {}) {
     'startTraining', 'markPhaseDone', 'renderHome', 'renderProgress',
     'renderOnboarding', 'dismissOnboarding', 'renderHeatmap',
     'renderHumGuide', 'showWeekDetail', 'showSettings', 'hideSettings',
+    'renderStructureTrainer', 'renderInfo', 'getStructures',
+    'STRUCTURES_I18N', 'STRUCT_TOPICS_I18N', 'INFO_TRAINING_I18N',
     // recorder
     'recPickMime', 'recSelectPrunable', 'recSupported', 'renderRecorderSection',
   ];

@@ -64,6 +64,10 @@ function getReadingTexts() {
   return (typeof READING_TEXTS !== 'undefined') ? READING_TEXTS : [];
 }
 
+function getStructures() { return STRUCTURES_I18N[curLang()] || STRUCTURES_I18N.ru; }
+function getStructTopics() { return STRUCT_TOPICS_I18N[curLang()] || STRUCT_TOPICS_I18N.ru; }
+function getInfoTraining() { return INFO_TRAINING_I18N[curLang()] || INFO_TRAINING_I18N.ru; }
+
 function setLang(lang) {
   if (!LANGS.includes(lang)) return;
   state.lang = lang;
@@ -443,6 +447,7 @@ function navigate(view, params) {
   stopBreathing();
   stopMetronome();
   if (typeof stopRecording === 'function') stopRecording();
+  stopStructMinute();
   unlockBodyScroll(true); // навигация всегда снимает блокировку скролла
   currentView = view;
   if (params) trainingState = params;
@@ -457,6 +462,7 @@ function render() {
     case 'phase':    renderPhase(); break;
     case 'done':     renderDone(); break;
     case 'program':  renderProgram(); break;
+    case 'info':     renderInfo(); break;
     case 'reading':  renderReading(); break;
     case 'progress': renderProgress(); break;
   }
@@ -752,6 +758,7 @@ function renderPhase() {
       <div class="phase-content-card">
         <div class="phase-content-text">${formatContent(phase.content)}</div>
 
+        ${phase.structureTrainer ? renderStructureTrainer(weekNum, dayNum) : ''}
         ${phase.id === 'speech' && typeof renderRecorderSection === 'function'
           ? renderRecorderSection(weekNum, dayNum, !!phase.isFinal) : ''}
         ${phase.readingText ? renderPhaseReading(weekNum, dayNum) : ''}
@@ -845,6 +852,70 @@ function renderBreathingGuide(pattern) {
       </div>
     </div>
   `;
+}
+
+// ─── Тренажёр структур речи (неделя 6) ───
+let structTopicIdx = 0;
+let structInt = null;
+let structEnd = 0;
+
+function renderStructureTrainer(weekNum, dayNum) {
+  const structs = getStructures();
+  const s = structs[(dayNum - 1) % structs.length];
+  const topics = getStructTopics();
+  structTopicIdx = (weekNum * 7 + dayNum) % topics.length;
+  return `
+    <div class="struct-card">
+      <div class="struct-head">
+        <span class="struct-label">${t('structToday')} ${(dayNum - 1) % structs.length + 1}/${structs.length}</span>
+        <button type="button" id="struct-btn" class="struct-btn" onclick="toggleStructMinute()">${t('structStart')}</button>
+      </div>
+      <div class="struct-name">${s.name}</div>
+      <div class="struct-steps">${s.steps}</div>
+      <div class="struct-example"><b>${t('structExample')}</b> ${s.example}</div>
+      <div class="struct-topic-row">
+        <span class="struct-topic" id="struct-topic"><b>${t('structTopic')}</b> ${topics[structTopicIdx]}</span>
+        <button type="button" class="struct-topic-btn" onclick="cycleStructTopic()">${t('structAnotherTopic')}</button>
+      </div>
+      <div id="struct-status" class="struct-status"></div>
+      <div class="struct-hint">${t('structHint')}</div>
+      <button type="button" class="struct-info-link" onclick="navigate('info')">${t('infoMore')}</button>
+    </div>
+  `;
+}
+
+function cycleStructTopic() {
+  const topics = getStructTopics();
+  structTopicIdx = (structTopicIdx + 1) % topics.length;
+  const el = document.getElementById('struct-topic');
+  if (el) el.innerHTML = `<b>${t('structTopic')}</b> ${topics[structTopicIdx]}`;
+}
+
+function toggleStructMinute() {
+  if (structInt) { stopStructMinute(); return; }
+  structEnd = Date.now() + 60 * 1000;
+  const btn = document.getElementById('struct-btn');
+  if (btn) btn.classList.add('running');
+  const status = document.getElementById('struct-status');
+  if (status) status.textContent = '';
+  structInt = setInterval(() => {
+    const remain = Math.max(0, Math.ceil((structEnd - Date.now()) / 1000));
+    const b = document.getElementById('struct-btn');
+    if (b) b.textContent = `${t('structStop')} 0:${String(remain).padStart(2, '0')}`;
+    if (remain <= 0) {
+      stopStructMinute();
+      playDone();
+      const st = document.getElementById('struct-status');
+      if (st) st.textContent = t('structTimeUp');
+    }
+  }, 250);
+}
+
+function stopStructMinute() {
+  if (structInt) { clearInterval(structInt); structInt = null; }
+  structEnd = 0;
+  const btn = document.getElementById('struct-btn');
+  if (btn) { btn.textContent = t('structStart'); btn.classList.remove('running'); }
 }
 
 // ─── Текст для чтения прямо в упражнении ───
@@ -1240,6 +1311,11 @@ function renderProgram() {
         }).join('')}
       </div>
 
+      <div class="info-link-card" onclick="navigate('info')">
+        <div class="info-link-title">${t('infoCardTitle')}</div>
+        <div class="info-link-sub">${t('infoCardSub')}</div>
+      </div>
+
       <div class="daily-template-card">
         <div class="template-title">${t('dailyTemplate')}</div>
         ${[
@@ -1305,6 +1381,51 @@ function showWeekDetail(weekNum) {
           state.currentWeek === weekNum ? state.currentDay : 1
         })">${t('trainBtn')}</button>
       `}
+    </div>
+    ${renderNav('program')}
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// INFO VIEW — теория: структура речи
+// ═══════════════════════════════════════════════
+function renderInfo() {
+  const structs = getStructures();
+  const training = getInfoTraining();
+  appEl.innerHTML = `
+    <div class="view info-view">
+      <div class="training-header">
+        <button class="back-btn" onclick="navigate('program')">${t('back')}</button>
+        <div class="training-title">${t('infoTitle')}</div>
+        <div></div>
+      </div>
+      <div class="page-sub info-page-sub">${t('infoSub')}</div>
+
+      <div class="section-title">${t('infoFrames')}</div>
+      <div class="info-frames">
+        ${structs.map((s, i) => `
+          <div class="info-frame-card">
+            <div class="info-frame-head">
+              <span class="info-frame-num">${i + 1}</span>
+              <span class="info-frame-name">${s.name}</span>
+            </div>
+            <div class="info-frame-steps">${s.steps}</div>
+            <div class="info-frame-example">${s.example}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="section-title">${t('infoTraining')}</div>
+      <div class="info-training">
+        ${training.map((x, i) => `
+          <div class="info-training-item">
+            <span class="info-frame-num">${i + 1}</span>
+            <span>${x}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="info-principle">${t('infoPrinciple')}</div>
     </div>
     ${renderNav('program')}
   `;

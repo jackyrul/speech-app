@@ -497,6 +497,7 @@ const PROGRAM = {
           emoji: '🎙️',
           color: '#8B5CF6',
           seconds: 360,
+          structureTrainer: true,
           content: 'Структуры речи\n\nТренируй 4 структуры:\n\n1️⃣ PREP\n   Point → Reason → Example → Point\n\n2️⃣ Problem → Impact → Solution\n   «Сейчас проблема... Это влияет... Решение...»\n\n3️⃣ Three Points\n   «Тут 3 момента: первое..., второе..., третье...»\n\n4️⃣ Short Pitch\n   «Я помогаю [кому] получить [результат] через [метод], без [боль].»\n\nЗапиши один пример каждой структуры голосом.',
         },
       ],
