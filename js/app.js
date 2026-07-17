@@ -732,6 +732,11 @@ function renderPhase() {
         <div></div>
       </div>
 
+      <div class="phase-dots">
+        ${week.phases.map((p, i) => `<span class="pdot ${i === phaseIndex ? 'on' : ''}"
+          style="background:${i === phaseIndex ? p.color : 'var(--border)'}"></span>`).join('')}
+      </div>
+
       <div class="timer-section">
         <svg class="timer-svg" viewBox="0 0 128 128">
           <circle class="timer-track" cx="64" cy="64" r="${radius}" />
@@ -781,6 +786,34 @@ function renderPhase() {
   if (phase.id === 'speech' && typeof initRecorderSection === 'function') {
     initRecorderSection(weekNum, dayNum, !!phase.isFinal);
   }
+  attachPhaseSwipe();
+}
+
+// ─── Свайпы между этапами ───
+let _swipeX = 0;
+let _swipeY = 0;
+
+function attachPhaseSwipe() {
+  const view = document.querySelector('.phase-view');
+  if (!view) return;
+  view.addEventListener('touchstart', (e) => {
+    _swipeX = e.touches[0].clientX;
+    _swipeY = e.touches[0].clientY;
+  }, { passive: true });
+  view.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - _swipeX;
+    const dy = e.changedTouches[0].clientY - _swipeY;
+    // Горизонтальный жест: заметный и явно не вертикальный скролл
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    const { weekNum, phaseIndex } = trainingState;
+    const phases = getWeek(weekNum).phases;
+    if (dx < 0 && phaseIndex < phases.length - 1) {
+      startPhase(phaseIndex + 1);
+    } else if (dx > 0) {
+      if (phaseIndex > 0) startPhase(phaseIndex - 1);
+      else navigate('training');
+    }
+  }, { passive: true });
 }
 
 function runPhaseTimer() {
@@ -1478,7 +1511,9 @@ function renderProgress() {
           <div class="page-title">${t('progressTitle')}</div>
           <div class="page-sub">${t('progressSub')}</div>
         </div>
-        <button class="settings-gear" onclick="showSettings()" aria-label="${t('settingsTitle')}">⚙️</button>
+        <button class="settings-gear" onclick="showSettings()" aria-label="${t('settingsTitle')}">
+          <svg class="gear-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
       </div>
 
       <div class="progress-hero-stats">
@@ -1707,18 +1742,26 @@ function renderAssessmentHistory() {
 // ═══════════════════════════════════════════════
 // BOTTOM NAV
 // ═══════════════════════════════════════════════
+// Иконки в стиле Lucide (inline SVG, stroke = currentColor)
+const NAV_ICONS = {
+  home: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/></svg>',
+  program: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>',
+  reading: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2Z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7Z"/></svg>',
+  progress: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+};
+
 function renderNav(active) {
   const tabs = [
-    { id: 'home', label: t('navHome'), icon: '🏠' },
-    { id: 'program', label: t('navProgram'), icon: '📋' },
-    { id: 'reading', label: t('navReading'), icon: '📖' },
-    { id: 'progress', label: t('navProgress'), icon: '📈' },
+    { id: 'home', label: t('navHome') },
+    { id: 'program', label: t('navProgram') },
+    { id: 'reading', label: t('navReading') },
+    { id: 'progress', label: t('navProgress') },
   ];
   return `
     <nav class="bottom-nav">
       ${tabs.map(tab => `
         <button class="nav-btn ${active === tab.id ? 'active' : ''}" onclick="navigate('${tab.id}')">
-          <span class="nav-icon">${tab.icon}</span>
+          <span class="nav-icon">${NAV_ICONS[tab.id]}</span>
           <span class="nav-label">${tab.label}</span>
         </button>
       `).join('')}

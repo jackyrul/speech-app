@@ -907,8 +907,11 @@ p + p { margin-top: 8px; }
   transition: color 0.15s;
 }
 .nav-btn.active { color: var(--primary); }
-.nav-icon { font-size: 22px; }
+.nav-icon { display: flex; align-items: center; justify-content: center; }
+.nav-svg { width: 24px; height: 24px; }
+.nav-btn.active .nav-svg { stroke-width: 2.4; }
 .nav-label { font-size: 10px; font-weight: 500; }
+.gear-svg { width: 22px; height: 22px; color: var(--text-muted); }
 
 /* ─── GIST SYNC ─── */
 .gist-sync-card {
@@ -1305,6 +1308,21 @@ p + p { margin-top: 8px; }
   border-color: transparent;
 }
 
+/* ─── ТОЧКИ-ИНДИКАТОР ЭТАПОВ ─── */
+.phase-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0 2px;
+}
+.pdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+.pdot.on { transform: scale(1.4); }
+
 /* ─── ТРЕНАЖЁР СТРУКТУР ─── */
 .struct-card {
   margin-top: 16px;
@@ -1574,6 +1592,14 @@ p + p { margin-top: 8px; }
   margin-bottom: 6px;
 }
 .rec-item-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.rec-item-actions { display: flex; align-items: center; gap: 2px; }
+.rec-share {
+  color: var(--text-muted);
+  background: none;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.rec-share svg { width: 16px; height: 16px; }
 .rec-del {
   font-size: 12px;
   color: var(--text-muted);
