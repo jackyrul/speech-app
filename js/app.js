@@ -462,6 +462,7 @@ function render() {
     case 'phase':    renderPhase(); break;
     case 'done':     renderDone(); break;
     case 'program':  renderProgram(); break;
+    case 'exercises': renderExercises(); break;
     case 'info':     renderInfo(); break;
     case 'reading':  renderReading(); break;
     case 'progress': renderProgress(); break;
@@ -725,7 +726,7 @@ function renderPhase() {
   appEl.innerHTML = `
     <div class="view phase-view" style="--phase-color: ${phase.color}">
       <div class="phase-header">
-        <button class="back-btn" onclick="stopTimer(); stopBreathing(); navigate('training')">${t('back')}</button>
+        <button class="back-btn" onclick="stopTimer(); stopBreathing(); navigate('${trainingState.free ? 'exercises' : 'training'}')">${t('back')}</button>
         <div class="phase-title-bar">
           ${phase.emoji} ${phase.title}
         </div>
@@ -763,6 +764,7 @@ function renderPhase() {
       <div class="phase-content-card">
         <div class="phase-content-text">${formatContent(phase.content)}</div>
 
+        ${phase.voicePhrases ? renderVoicePhrases(weekNum, dayNum) : ''}
         ${phase.structureTrainer ? renderStructureTrainer(weekNum, dayNum) : ''}
         ${phase.id === 'speech' && typeof renderRecorderSection === 'function'
           ? renderRecorderSection(weekNum, dayNum, !!phase.isFinal) : ''}
@@ -775,9 +777,10 @@ function renderPhase() {
       </div>
 
       <div class="phase-footer">
-        <button class="btn-phase-done" onclick="markPhaseDone('${phase.id}')">
-          ${t('phaseDone')}
-        </button>
+        ${trainingState.free
+          ? `<button class="btn-phase-done" onclick="navigate('exercises')">${t('freeDone')}</button>`
+          : `<button class="btn-phase-done" onclick="markPhaseDone('${phase.id}')">${t('phaseDone')}</button>`
+        }
       </div>
     </div>
   `;
@@ -805,7 +808,8 @@ function attachPhaseSwipe() {
     const dy = e.changedTouches[0].clientY - _swipeY;
     // Горизонтальный жест: заметный и явно не вертикальный скролл
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return;
-    const { weekNum, phaseIndex } = trainingState;
+    const { weekNum, phaseIndex, free } = trainingState;
+    if (free) { if (dx > 0) navigate('exercises'); return; }
     const phases = getWeek(weekNum).phases;
     if (dx < 0 && phaseIndex < phases.length - 1) {
       startPhase(phaseIndex + 1);
@@ -949,6 +953,43 @@ function stopStructMinute() {
   structEnd = 0;
   const btn = document.getElementById('struct-btn');
   if (btn) { btn.textContent = t('structStart'); btn.classList.remove('running'); }
+}
+
+// ─── Фразы для голосовых упражнений («Ммм» + чтение) ───
+let voicePhraseIdx = 0;
+
+function getVoicePhrases() {
+  const lang = curLang();
+  if (lang !== 'ru' && typeof VOICE_PHRASES_I18N !== 'undefined' && VOICE_PHRASES_I18N[lang]) {
+    return VOICE_PHRASES_I18N[lang];
+  }
+  return (typeof VOICE_PHRASES !== 'undefined') ? VOICE_PHRASES : [];
+}
+
+function renderVoicePhrases(weekNum, dayNum) {
+  const sets = getVoicePhrases();
+  if (!sets.length) return '';
+  voicePhraseIdx = (weekNum * 7 + dayNum) % sets.length;
+  return `
+    <div class="phrases-card">
+      <div class="phrases-head">
+        <span class="phrases-title">${t('phrasesTitle')}</span>
+        <button type="button" class="phrases-btn" onclick="cycleVoicePhrases()">${t('phrasesAnother')}</button>
+      </div>
+      <div id="phrases-list" class="phrases-list">
+        ${sets[voicePhraseIdx].map(p => `<div class="phrase-line">${p}</div>`).join('')}
+      </div>
+      <div class="phrases-hint">${t('phrasesHint')}</div>
+    </div>
+  `;
+}
+
+function cycleVoicePhrases() {
+  const sets = getVoicePhrases();
+  if (!sets.length) return;
+  voicePhraseIdx = (voicePhraseIdx + 1) % sets.length;
+  const el = document.getElementById('phrases-list');
+  if (el) el.innerHTML = sets[voicePhraseIdx].map(p => `<div class="phrase-line">${p}</div>`).join('');
 }
 
 // ─── Текст для чтения прямо в упражнении ───
@@ -1420,6 +1461,99 @@ function showWeekDetail(weekNum) {
 }
 
 // ═══════════════════════════════════════════════
+// EXERCISES VIEW — свободная тренировка
+// Любое упражнение из всех 8 недель, без привязки к дню
+// ═══════════════════════════════════════════════
+const PHASE_ORDER = ['breathing', 'articulation', 'diction', 'voice', 'speech'];
+
+// Все упражнения программы, сгруппированные по типу этапа
+function getExerciseLibrary() {
+  const groups = {};
+  PROGRAM.weeks.forEach((baseWeek) => {
+    const week = getWeek(baseWeek.id);
+    week.phases.forEach((phase, idx) => {
+      if (!groups[phase.id]) groups[phase.id] = { id: phase.id, emoji: phase.emoji, title: phase.title, color: phase.color, items: [] };
+      groups[phase.id].items.push({
+        weekNum: week.id,
+        phaseIndex: idx,
+        title: phase.content.split('\n')[0],
+        minutes: Math.round(phase.seconds / 60),
+        locked: week.id > state.currentWeek,
+      });
+    });
+  });
+  return PHASE_ORDER.map((id) => groups[id]).filter(Boolean);
+}
+
+// Запуск любого упражнения в свободном режиме — прогресс дня не трогаем
+function startFreePhase(weekNum, phaseIndex) {
+  navigate('phase', { weekNum, dayNum: state.currentDay, phaseIndex, completedPhases: [], free: true });
+}
+
+function renderExercises() {
+  const lib = getExerciseLibrary();
+  appEl.innerHTML = `
+    <div class="view exercises-view">
+      <div class="page-header">
+        <div class="page-title">${t('exTitle')}</div>
+        <div class="page-sub">${t('exSub')}</div>
+      </div>
+
+      <div class="ex-random-card" onclick="startRandomExercise()">
+        <div class="ex-random-title">${t('exRandom')}</div>
+        <div class="ex-random-sub">${t('exRandomSub')}</div>
+      </div>
+
+      ${lib.map((g) => `
+        <div class="section-title">${g.emoji} ${g.title}</div>
+        <div class="ex-group">
+          ${g.items.map((it) => `
+            <button class="ex-item ${it.locked ? 'locked' : ''}" onclick="startFreePhase(${it.weekNum}, ${it.phaseIndex})">
+              <span class="ex-dot" style="background:${g.color}"></span>
+              <span class="ex-item-body">
+                <span class="ex-item-title">${it.title}</span>
+                <span class="ex-item-meta">${t('week')} ${it.weekNum} · ${it.minutes} ${t('exMin')}</span>
+              </span>
+              <span class="ex-go">→</span>
+            </button>
+          `).join('')}
+        </div>
+      `).join('')}
+
+      <div class="section-title">${t('exTwisters')}</div>
+      <div class="ex-twisters">
+        ${(typeof TWISTERS_BY_SOUND !== 'undefined' ? getTwistersBySound() : []).map((grp, gi) => `
+          <div class="tw-group">
+            <div class="tw-sound">${grp.sound}</div>
+            ${grp.items.map((tw, ti) => `
+              <div class="tw-line" onclick="speakTwister(${gi}, ${ti})">${tw.replace(/\n/g, '<br>')}</div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ${renderNav('exercises')}
+  `;
+}
+
+function getTwistersBySound() {
+  const lang = curLang();
+  if (lang !== 'ru' && typeof TWISTERS_SOUND_I18N !== 'undefined' && TWISTERS_SOUND_I18N[lang]) return TWISTERS_SOUND_I18N[lang];
+  return (typeof TWISTERS_BY_SOUND !== 'undefined') ? TWISTERS_BY_SOUND : [];
+}
+
+function speakTwister() { /* тап по скороговорке — просто визуальный отклик */ }
+
+function startRandomExercise() {
+  const lib = getExerciseLibrary();
+  const all = [];
+  lib.forEach((g) => g.items.forEach((it) => { if (!it.locked) all.push(it); }));
+  if (!all.length) return;
+  const pick = all[Math.floor(Math.random() * all.length)];
+  startFreePhase(pick.weekNum, pick.phaseIndex);
+}
+
+// ═══════════════════════════════════════════════
 // INFO VIEW — теория: структура речи
 // ═══════════════════════════════════════════════
 function renderInfo() {
@@ -1748,12 +1882,14 @@ const NAV_ICONS = {
   program: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>',
   reading: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2Z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7Z"/></svg>',
   progress: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+  exercises: '<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6.5 6.5 11 11"/><path d="m21 21-1-1"/><path d="m3 3 1 1"/><path d="m18 22 4-4"/><path d="m2 6 4-4"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>',
 };
 
 function renderNav(active) {
   const tabs = [
     { id: 'home', label: t('navHome') },
     { id: 'program', label: t('navProgram') },
+    { id: 'exercises', label: t('navExercises') },
     { id: 'reading', label: t('navReading') },
     { id: 'progress', label: t('navProgress') },
   ];
