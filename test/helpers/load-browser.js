@@ -135,6 +135,8 @@ function load(options = {}) {
     'renderHumGuide', 'showWeekDetail', 'showSettings', 'hideSettings',
     'renderStructureTrainer', 'renderInfo', 'getStructures',
     'startPhase', 'attachPhaseSwipe', 'shareRecording', 'NAV_ICONS',
+    'getExerciseLibrary', 'renderExercises', 'startFreePhase', 'renderVoicePhrases',
+    'TWISTERS_BY_SOUND', 'TWISTERS_MAIN', 'VOICE_PHRASES', 'trainingState',
     'STRUCTURES_I18N', 'STRUCT_TOPICS_I18N', 'INFO_TRAINING_I18N',
     // recorder
     'recPickMime', 'recSelectPrunable', 'recSupported', 'renderRecorderSection',

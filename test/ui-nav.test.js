@@ -4,12 +4,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { load } = require('./helpers/load-browser.js');
 
-test('bottom nav uses SVG icons for all four tabs', () => {
+test('bottom nav uses SVG icons for all five tabs', () => {
   const { exports: X, el } = load();
   X.state.onboarded = true;
   X.renderHome();
   const navPart = el.innerHTML.slice(el.innerHTML.indexOf('bottom-nav'));
-  assert.equal((navPart.match(/nav-svg/g) || []).length, 4, 'four svg icons');
+  assert.equal((navPart.match(/nav-svg/g) || []).length, 5, 'five svg icons');
+  assert.match(navPart, /navigate\('exercises'\)/, 'exercises tab present');
   assert.doesNotMatch(navPart, /🏠|📋|📖|📈/, 'no emoji icons left');
 });
 

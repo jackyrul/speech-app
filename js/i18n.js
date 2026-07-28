@@ -146,6 +146,17 @@ const UI = {
     infoTraining: 'Как тренировать',
     infoPrinciple: 'Структура — не шаблон. Это когда слушатель в любой момент понимает, где он в твоей мысли и зачем ты это говоришь.',
     infoMore: '📚 Все каркасы и упражнения →',
+    navExercises: 'Упражнения',
+    exTitle: '🏋️ Упражнения',
+    exSub: 'Любое упражнение в любой момент — прогресс дня не меняется',
+    exRandom: '🎲 Случайное упражнение',
+    exRandomSub: 'Не знаешь, с чего начать — жми',
+    exMin: 'мин',
+    exTwisters: '🌀 Все скороговорки',
+    freeDone: 'Готово →',
+    phrasesTitle: '📝 Фразы для чтения',
+    phrasesAnother: '🔀 Другие',
+    phrasesHint: 'Читай вслух после «Мммм» — мягко, не торопясь',
   },
 
   uk: {
@@ -282,6 +293,17 @@ const UI = {
     infoTraining: 'Як тренувати',
     infoPrinciple: 'Структура — не шаблон. Це коли слухач у будь-який момент розуміє, де він у твоїй думці і навіщо ти це говориш.',
     infoMore: '📚 Усі каркаси та вправи →',
+    navExercises: 'Вправи',
+    exTitle: '🏋️ Вправи',
+    exSub: 'Будь-яка вправа будь-коли — прогрес дня не змінюється',
+    exRandom: '🎲 Випадкова вправа',
+    exRandomSub: 'Не знаєш, з чого почати — тисни',
+    exMin: 'хв',
+    exTwisters: '🌀 Усі скоромовки',
+    freeDone: 'Готово →',
+    phrasesTitle: '📝 Фрази для читання',
+    phrasesAnother: '🔀 Інші',
+    phrasesHint: 'Читай уголос після «Мммм» — м’яко, не поспішаючи',
   },
 
   en: {
@@ -418,6 +440,17 @@ const UI = {
     infoTraining: 'How to train',
     infoPrinciple: 'Structure is not a template. It\'s when the listener always knows where they are in your thought and why you\'re saying it.',
     infoMore: '📚 All frameworks and exercises →',
+    navExercises: 'Exercises',
+    exTitle: '🏋️ Exercises',
+    exSub: 'Any exercise anytime — your daily progress stays untouched',
+    exRandom: '🎲 Random exercise',
+    exRandomSub: 'Not sure where to start — tap here',
+    exMin: 'min',
+    exTwisters: '🌀 All tongue twisters',
+    freeDone: 'Done →',
+    phrasesTitle: '📝 Phrases to read',
+    phrasesAnother: '🔀 Others',
+    phrasesHint: 'Read aloud after the "Mmmm" — softly, unhurried',
   },
 };
 
@@ -613,6 +646,90 @@ const READING_I18N = {
       id: 'dickinson-hope', title: '"Hope" is the thing with feathers', author: 'Emily Dickinson', source: 'Poem 254 (c. 1861)', level: 'Voice',
       text: '"Hope" is the thing with feathers —\nThat perches in the soul —\nAnd sings the tune without the words —\nAnd never stops — at all —\n\nAnd sweetest — in the Gale — is heard —\nAnd sore must be the storm —\nThat could abash the little Bird\nThat kept so many warm —\n\nI\'ve heard it in the chillest land —\nAnd on the strangest Sea —\nYet — never — in Extremity,\nIt asked a crumb — of me.',
     },
+  ],
+};
+
+// ─── Скороговорки по звукам (раздел «Упражнения») ───
+const TWISTERS_SOUND_I18N = {
+  uk: [
+    { sound: 'Р — Л', items: [
+      'Ковалів Ковалець кував у Ковалисі\nна ковадлі ковалі',
+      'Бурі бобри брід перебрели,\nзабули бобри забрати торби',
+      'Летів горобець через безверхий хлівець,\nнахапався гороху без червотоку',
+      'Рекламу друкували, друкували\nта й не видрукували',
+    ] },
+    { sound: 'С — Ш', items: [
+      'Сів шпак на шпаківню,\nзаспівав шпак півню',
+      'Шишки на сосні, шашки на столі',
+      'Сашко сушив сушки на сонці',
+      'Стриб-стриб, стриб-стриб —\nстрибав по стежці стрибунець',
+    ] },
+    { sound: 'Ж — З — Ц', items: [
+      'Жовтий жук жалив жабу,\nжаба жука не жалувала',
+      'Ішов Прокіп, кипів окріп,\nприйшов Прокіп — кипить окріп',
+      'Цап цупив цукор,\nцукор цап зацупив',
+      'Знай, знай, знай, знай —\nзнання здобувай',
+    ] },
+    { sound: 'Ч — Щ', items: [
+      'Чотири чорненьких чумазеньких чортенята\nчертили чорним чорнилом креслення',
+      'Ще щеня щетинки щипле',
+      'Черепаха чаплю чаєм частувала',
+      'Щиро щебече щиглик у щавлі',
+    ] },
+    { sound: 'Складні зв’язки', items: [
+      'Вибіг Гриць на вулицю,\nна метелика дивиться',
+      'Пиляв Пилип поліна з лип,\nпритупив пилку Пилип',
+      'В сіни Сеня сіно ніс,\nспотикнувся Сеня — сіно скрізь',
+      'Кричав Архип, Архип охрип,\nне треба Архипу кричати до хрипу',
+    ] },
+  ],
+  en: [
+    { sound: 'S — Sh', items: [
+      'She sells seashells by the seashore,\nand the shells she sells are seashells',
+      'Six sleek swans swam swiftly southwards',
+      'Sam\'s shop stocks short spotted socks',
+      'The sixth sick sheikh\'s sixth sheep\'s sick',
+    ] },
+    { sound: 'R — L', items: [
+      'Red lorry, yellow lorry,\nred lorry, yellow lorry',
+      'Really rural, really rural, really rural',
+      'Larry sent the latter a letter later',
+      'Round the rugged rock\nthe ragged rascal ran',
+    ] },
+    { sound: 'Th', items: [
+      'The thirty-three thieves thought\nthat they thrilled the throne',
+      'Whether the weather is warm,\nwhether the weather is hot,\nwe have to put up with the weather',
+      'These thousand tricky tongue twisters\ntrip thrillingly off the tongue',
+      'Thin sticks, thick bricks',
+    ] },
+    { sound: 'P — B', items: [
+      'Peter Piper picked a peck of pickled peppers',
+      'Betty Botter bought some butter,\nbut she said the butter\'s bitter',
+      'A big black bug bit a big black bear',
+      'Brisk brave brigadiers brandished\nbroad bright blades',
+    ] },
+    { sound: 'Tricky combos', items: [
+      'How much wood would a woodchuck chuck\nif a woodchuck could chuck wood?',
+      'Imagine an imaginary menagerie manager\nimagining managing an imaginary menagerie',
+      'Pad kid poured curd pulled cod',
+      'The seething sea ceaseth,\nand thus the seething sea sufficeth us',
+    ] },
+  ],
+};
+
+// ─── Фразы для голосовых упражнений ───
+const VOICE_PHRASES_I18N = {
+  uk: [
+    ['Море мовчки колише мачти.', 'Мама мила мамину машину.', 'Молодий мельник меле мелене зерно.'],
+    ['Мої думки — м’які та ясні.', 'Мені не треба багато слів, щоб мене почули.', 'Мій голос звучить спокійно і рівно.'],
+    ['Повз млин помалу махає мельник.', 'Милий мій, ми вдома.', 'Багато музики — мало змісту.'],
+    ['Розумний мовчить, коли можна мовчати.', 'Між нами — лише море і думки.', 'Мені важливо, щоб мене зрозуміли.'],
+  ],
+  en: [
+    ['My mind moves slowly and calmly.', 'Many mornings my mother made marmalade.', 'The moon moved among the mountains.'],
+    ['My voice is warm and even.', 'I need no many words to be heard.', 'My meaning matters more than my speed.'],
+    ['Milk, marble, morning, memory.', 'Many men make many minds.', 'The murmur of the sea remains.'],
+    ['A calm man means what he says.', 'Between us — the mountains and the morning.', 'My message must be simple.'],
   ],
 };
 
